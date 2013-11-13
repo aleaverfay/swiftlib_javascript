@@ -94,7 +94,7 @@ function load_library_from_table( library ) {
         rows.push( icols.join(",")  );
     }
     var csv_string = rows.join( "\n" );
-    //csv_string = tims_problem();
+    csv_string = tims_problem();
 
     console.log( csv_string );
     library.load_library( csv_string );
@@ -136,9 +136,7 @@ function validate_inputs_and_launch() {
         return;
     }
 
-    // otherwise, go ahead and initialize the library and optimize it
-    alert( 'success' );
-    //$('#resultdiv').html( '<p>TESTING 1 2 3</p>' );
+
     var library = AALibrary();
     load_library_from_table( library );
     library.compute_smallest_diversity_for_all_errors();
@@ -150,6 +148,8 @@ function validate_inputs_and_launch() {
     } else {
         $('#resultdiv').html( "<p> No solution exists for the given set of required (*) and forbidden (!) amino acids </p>" );
     }
+    $('#resultdiv').scrollintoview();
+        
 }
 
 $(document).ready(function () {
@@ -158,7 +158,7 @@ $(document).ready(function () {
         $('.aacountcell').blur( function() {validate_aacount_cell(this)} );
         $('.seqposcell').blur( function() { validate_seqpos_cell(this)} );
         $('#launchbutton').click( validate_inputs_and_launch );
-    })
+})
 
 // Local Variables:
 // js-indent-level: 4
