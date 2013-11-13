@@ -75,7 +75,7 @@ function tims_problem() {
     return csv_string;
 }
 
-function load_library_from_table( library ) {
+function load_library_from_table( library, scp_int ) {
     // turn the user-provided input into a CSV string
     var rows = [];
     var trs = $('#aacounts').find('tr');
@@ -88,6 +88,7 @@ function load_library_from_table( library ) {
             else {
                 jcontents = strip_whitespace( $($(tds[j]).find("input")[0]).val() );
                 if ( i !== 0 && jcontents === "" ) { jcontents = "0"; }
+                if ( i == 20 && scp_int !== 0 ) { jcontents = scp_int.toString(); }
             }
             icols.push( jcontents );
         }
@@ -113,6 +114,39 @@ function verify_solution_exists( library ) {
     return false;
 }
 
+function output_tables_from_error_values( library, error_list, diversity_cap )  {
+    var output_html = []
+    for ( var i=0; i < error_list.length; ++i ) {
+        var table_i = [];
+        var error_trace = library.traceback_from_error_level( error_list[i] );
+        var i_data = report_output_library_data( library, error_trace, diversity_cap );
+        var i_summary = ["<p> Result #", (i+1).toString(), ".  Error: ", error_list[i].toString(), " Diversity: ", i_data.diversity.toExponential(3), "</p>" ];
+        var table = [];
+        if ( i === 0 ) {
+            table.push( "<table id=scrollhere >" );
+        } else {
+            table.push( "<table>" );
+        }
+        table.push( "<tr><td>Pos</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td>Diversity</td></tr>" );
+        for ( var j=0; j < library.n_positions; ++j ) {
+            var j_pos = i_data.positions[j];
+            table.push( "<tr>" );
+            table.push( [ "<td>", j_pos.orig_pos_string, "</td>" ].join("") );
+            table.push( [ "<td>", j_pos.codon_string,"</td>" ].join("") );
+            table.push( [ "<td>", j_pos.present_string,"</td>" ].join("") );
+            table.push( [ "<td>", j_pos.absent_string,"</td>" ].join("") );
+            table.push( [ "<td>", j_pos.error.toString(), "</td>" ].join("") );
+            table.push( [ "<td>", Math.exp( j_pos.log_diversity ).toExponential(2), "</td>" ].join("") );
+            table.push( "</tr>" );
+        }
+        table.push( "</table>" );
+        output_html.push( i_summary.join("") );
+        output_html.push( table.join("\n") );
+        output_html.push( "<br><br>" );
+    }
+    return output_html.join("\n");
+}
+
 function validate_inputs_and_launch() {
     var trs = $('#aacounts').find('tr');
     var any_errors = false;
@@ -130,25 +164,61 @@ function validate_inputs_and_launch() {
     }
     
     // also validate the stop-codon penalty, and the upper and lower bounds cells.
+    var scp_str = $("#stop_codon_penalty").val();
+    var scp_int = parseInt( scp_str );
+    if ( scp_str != "" && ( scp_int != scp_int || scp_int < 0 ) ) {
+        $("#stop_codon_penalty").css("background-color","pink");
+        any_errors = true;
+    } else {
+        $("#stop_codon_penalty").css("background-color","white");
+        if ( scp_int != scp_int ) {
+            scp_int = 0;
+        }
+    }
 
+    var ub_str = $('#libsize_upper').val();
+    var ub_float = parseFloat( ub_str );
+    if ( ub_float != ub_float || ub_float < 0 ) {
+        $('#libsize_upper').css("background-color","pink");
+        any_errors = true;
+    } else {
+        $('#libsize_upper').css("background-color","white");
+    }
+
+    var lb_str = $('#libsize_lower').val();
+    var lb_float = parseFloat( lb_str );
+    if ( lb_str != "" && ( lb_float != lb_float || lb_float < 0 || lb_float > ub_float )) {
+        $('#libsize_lower').css("background-color","pink");
+        any_errors = true;
+    } else {
+        $('#libsize_lower').css("background-color","white");
+    }
+        
     if ( any_errors ) {
-        alert( "errors in input table" );
+        alert( "Errors in inputs" );
         return;
     }
 
 
     var library = AALibrary();
-    load_library_from_table( library );
+    load_library_from_table( library, scp_int );
     library.compute_smallest_diversity_for_all_errors();
     if ( verify_solution_exists( library )) {
-        var diversity_cap = 3.2e8; // tmp
-        var best = library.optimize_library( diversity_cap );
-        var output_string = print_output_codons( library, best, diversity_cap );
-        $('#resultdiv').html( "<p>" + output_string.replace( /\n/g, "<br>" ) + "</p>" );
+        library.optimize_library();
+        if ( lb_float != lb_float ) {
+            var error_list = [ library.find_minimal_error_beneath_diversity_cap( ub_float ) ];
+        } else {
+            var error_list = library.errors_in_diversity_range( ub_float, lb_float );
+            console.log( "Error list: ", error_list.join(",") );
+        }
+        var output_html = output_tables_from_error_values( library, error_list, ub_float );
+
+        $('#resultdiv').html( output_html );
+
     } else {
-        $('#resultdiv').html( "<p> No solution exists for the given set of required (*) and forbidden (!) amino acids </p>" );
+        $('#resultdiv').html( "<p id=scrollhere > No solution exists for the given set of required (*) and forbidden (!) amino acids </p>" );
     }
-    $('#resultdiv').scrollintoview();
+    $('#scrollhere').scrollIntoView();
         
 }
 

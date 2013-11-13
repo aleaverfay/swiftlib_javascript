@@ -444,7 +444,7 @@ function AALibrary() {
     }
 
                 
-    library.optimize_library = function( diversity_cap ) {
+    library.optimize_library = function() {
         //Run a dynamic programming algorithm to determine the minimum diversity for
         //every error level, and return an array of error levels for each position
         //that describes the library that fits under the diversity cap with the smallest
@@ -497,13 +497,22 @@ function AALibrary() {
                 }
             }
         }
-        return this.traceback( diversity_cap );
     }
 
-    library.traceback = function( diversity_cap ) {
-        // now the traceback
-        var optimal_error_traceback = [];
-        for ( var i=0; i < this.n_positions; ++i ) { optimal_error_traceback[i] = 0; }
+    library.errors_in_diversity_range = function ( diversity_upper_bound, diversity_lower_bound ) {
+        var errors_in_range = [];
+        var log_ub = Math.log( diversity_upper_bound );
+        var log_lb = Math.log( diversity_lower_bound );
+        var last_row = this.dp_divmin_for_error[ this.n_positions - 1 ];
+        for ( var i=0; i < this.error_span; ++i ) {
+            if ( last_row[ i ] < log_ub && last_row[ i ] > log_lb ) {
+                errors_in_range.push( i );
+            }
+        }
+        return errors_in_range;
+    }
+
+    library.find_minimal_error_beneath_diversity_cap = function( diversity_cap ) {
         var log_diversity_cap =  Math.log( diversity_cap );
 
         //for i in xrange( this.error_span ) :
@@ -512,15 +521,21 @@ function AALibrary() {
 
         for ( var i=0; i <= this.error_span; ++i ) {
             if ( this.dp_divmin_for_error[ this.n_positions-1 ][i] != this.infinity && this.dp_divmin_for_error[ this.n_positions-1 ][i] < log_diversity_cap ) {
-                var best = i;
-                console.log( "Minimum error of " + i + " with log(diversity) of " + this.dp_divmin_for_error[ this.n_positions-1][i] );
-                break;
+                return i;
             }
         }
-        return this.traceback_from_error_level( best, optimal_error_traceback );
     };
 
-    library.traceback_from_error_level = function( error_level, error_traceback ) {
+    library.traceback = function( diversity_cap ) {
+        // now the traceback
+        var least_error = this.find_minimal_error_beneath_diversity_cap( diversity_cap );
+        return this.traceback_from_error_level( least_error );
+    };
+
+    library.traceback_from_error_level = function( error_level ) {
+        var error_traceback = [];
+        for ( var i=0; i < this.n_positions; ++i ) { error_traceback[i] = 0; }
+
         var position_error = []
         for ( var i=0; i < this.n_positions; ++i ) { position_error[i] = 0; }
         for ( var i=this.n_positions-1; i >= 0; --i ) {
@@ -537,62 +552,74 @@ function AALibrary() {
     return library;
 }
 
-function final_codon_string( position, degenerate_codon, library ) {
+function record_codon_data( position, degenerate_codon, library ) {
     // three things we need:
     // 1: the codon
     // 2: the amino acids that are represented
     // 2b: the counts from the original set of observations for each of the represented aas
     // 3: the amino acids and their counts in the original set of observations that are not represented
+    codon_data = {}
+
     var aas_present  = library.aas_for_degenerate_codon( degenerate_codon );
     var orig_obs = library.aa_counts[ position ];
 
-    var orig_pos_string = "Position " + library.orig_pos[ position ];
+    codon_data.orig_pos_string = library.orig_pos[ position ];
 
-    var codon_string = "";
+    codon_data.codon_string = "";
     for ( var i=0; i < 3; ++i ) {
         var idcpos = degenerate_codon.pos[i];
         var base_tuple = []
         for ( var j=0; j < 4; ++j ) {
             base_tuple[j] = binBoolString( idcpos[j] );
         }
-        codon_string += degenerate_codon.degenerate_base_names[ base_tuple.join("") ];
+        codon_data.codon_string += degenerate_codon.degenerate_base_names[ base_tuple.join("") ];
     }
 
-    var present_string = "";
+    codon_data.present_string = "";
+    codon_data.error = 0;
     for ( var i=0; i < aas_present.length; ++i ) {
         if ( aas_present[i] ) {
-            present_string += " " + library.gcmapper.aastr_for_integer( i );
-            if ( i != 20 ) {
-                present_string += "(" + orig_obs[i] + ")";
+            codon_data.present_string += " " + library.gcmapper.aastr_for_integer( i );
+            if ( library.required[position][i] ) {
+                codon_data.present_string += "(*)";
+            } else {
+                codon_data.present_string += "(" + orig_obs[i] + ")";
+            }
+            if ( orig_obs[i] < 0 ) {
+                codon_data.error -= orig_obs[i];
             }
         }
     }
 
-    var absent_string = "Absent";
-    for ( var i=0; i < orig_obs.length; ++i ) {
+    codon_data.absent_string = "";
+    for ( var i=0; i < aas_present.length; ++i ) {
         if ( orig_obs[i] !== 0 && ! aas_present[i] ) {
-            absent_string += " " + library.gcmapper.aastr_for_integer( i ) + "(" + orig_obs[i] + ")";
+            codon_data.absent_string += " " + library.gcmapper.aastr_for_integer( i ) + "(" + orig_obs[i] + ")";
+            codon_data.error += orig_obs[i];
         }
     }
 
-    var log_diversity_string = "log(diversity)=  " +  degenerate_codon.log_diversity().toPrecision( 3 );
+    codon_data.log_diversity = degenerate_codon.log_diversity();
 
-    return orig_pos_string + " : " + codon_string + " : " + log_diversity_string + " : " + present_string + " : " + absent_string;
+    return codon_data;
 }    
 
-function print_output_codons( library, error_sequence, diversity_cap ) {
+function report_output_library_data( library, error_sequence, diversity_cap ) {
     var dc = DegenerateCodon();
     var diversity_sum = 0;
-    var output_codon_string = []
+    var output_library_data = {};
+    output_library_data.positions = [];
+    output_library_data.error = 0;
     for ( var i=0; i < library.n_positions; ++i ) {
         var lexind = library.divmin_for_error[ i ][ error_sequence[ i ] ][ 1 ];
         library.dclex.set_from_index(lexind);
         dc.set_from_lex( library.dclex );
         diversity_sum += dc.log_diversity();
-        output_codon_string.push( final_codon_string( i, dc, library ) );
+        output_library_data.positions.push( record_codon_data( i, dc, library ) );
+        output_library_data.error += output_library_data.positions[ i ].error;
     }
-    output_codon_string.push( "Max log diversity: " + Math.log( diversity_cap ).toPrecision( 5 ) + " Theorical diversity " + diversity_sum.toPrecision( 5 ) );
-    return output_codon_string.join("\n");
+    output_library_data.diversity = Math.exp( diversity_sum );
+    return output_library_data;
 }
 
 var library = AALibrary();
