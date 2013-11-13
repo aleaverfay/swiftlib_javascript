@@ -1,0 +1,25 @@
+.aacountcell {
+    color:blue;
+    size:4;
+}
+.mytable {
+    border-collapse:collapse;
+}
+.firstrow {
+    border-top: thin solid black;
+    border-bottom: thin solid black;
+}
+.buttonlink {
+    display:inline-block;
+    border-style:solid;
+    border-color:#bbb #888 #666 #aaa;
+    border-width:2px 2px 2px 2px;
+    width:4em;
+    //height:2em;
+    background:#ccc;
+    color:#333;
+    line-height:1;
+    text-align:center;
+    //text-decoration:none;
+    //font-weight:50;
+}
