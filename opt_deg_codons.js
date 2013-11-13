@@ -1,4 +1,8 @@
 
+function strip_whitespace( str ) {
+    return str.replace(/^\s+|\s+$/g,'');
+}
+
 function newFilledArray( len, val ) {
     var newarray = [];
     for ( var i=0; i < len; ++i ) {
@@ -315,41 +319,74 @@ function AALibrary() {
     // column 1 gives the amino acid names
     // row1/column1 gives nothing
     // all other row/column combinations should be integers
-    library.load_library = function() {
-        var contents = document.getElementById( "aaobs" ).value;
-        var lines = contents.split("\n");
+    library.load_library = function( csv_contents ) {        
+        var lines = csv_contents.split("\n");
         row1 = lines[0].split(",");
         this.n_positions = row1.length-1;
         this.aa_counts = [];
+        this.required = [];
+        this.forbidden = [];
         for ( var i=0; i < this.n_positions; ++i ) {
-            this.aa_counts[ i ] = newFilledArray( 20, 0 );
+            this.aa_counts[ i ] = newFilledArray( 21, 0 );
+            this.required[ i ]  = newFilledArray( 21, false );
+            this.forbidden[ i ] = newFilledArray( 21, false );
         }
         this.orig_pos = [];
         for ( var i=1; i < row1.length; ++i ) {
-            this.orig_pos[i] = row1[i].replace(/^\s+|\s+$/g,'');
+            this.orig_pos[i-1] = strip_whitespace( row1[i] )
         }
 
-        this.max_obs = 0;
-        for ( var i=0; i < 20; ++i ) {
+        this.max_per_position_error = 0;
+        var obs_count = newFilledArray( this.n_positions, 0 );
+        for ( var i=0; i < 21; ++i ) {
             var line = lines[ i + 1 ];
             var vals = line.split(",").slice(1);
             var iiobs = 0;
             for ( var j=0; j < vals.length; ++j ) {
-                this.aa_counts[j][i] = parseInt(vals[j]);
-                iiobs += this.aa_counts[j][i];
-            }
-            if ( iiobs > this.max_obs ) {
-                this.max_obs = iiobs;
+                var ijval = vals[j];
+                if ( ijval === "*" ) {
+                    //required!
+                    this.required[j][i] = true;
+                } else if ( ijval === "!" ) {
+                    // forbidden
+                    this.forbidden[j][i] = true;
+                } else {
+                    var ij_int = parseInt(ijval);
+                    this.aa_counts[j][i] = ij_int;
+                    obs_count[j] += Math.abs( ij_int );
+                }
             }
             console.log( vals.join(", ") );
         }
+        for ( var i=0; i < this.n_positions; ++i ) { 
+            if ( obs_count[i] > this.max_per_position_error ) {
+                this.max_per_position_error = obs_count[i];
+            }
+        }
+
     };
 
+    // Returns the error for a given set of amino acids.
+    // Returns this.infinity if one of the required amino
+    // acids is missing or if a forbidden amino acid is present
     library.error_given_aas_for_pos = function( pos, aas ) {
         var error = 0;
-        for ( var i=0; i < 20; ++i ) {
+        for ( var i=0; i < 21; ++i ) {
+            var icount = this.aa_counts[ pos ][ i ];
             if ( ! aas[ i ] ) {
-                error += this.aa_counts[ pos ][ i ];
+                if ( this.required[ pos ][ i ] ) {
+                    return this.infinity;
+                }
+                if ( icount > 0 ) {
+                    error += icount;
+                }
+            } else {
+                if ( this.forbidden[ pos ][ i ] ) {
+                    return this.infinity;
+                }
+                if ( icount < 0 ) {
+                    error -= icount;
+                }
             }
         }
         return error;
@@ -359,7 +396,7 @@ function AALibrary() {
         this.divmin_for_error = [];
         for ( var i=0; i < this.n_positions; ++i ) {
             this.divmin_for_error[i] = []
-            for ( var j=0; j < this.max_obs; ++j ) {
+            for ( var j=0; j <= this.max_per_position_error; ++j ) {
                 this.divmin_for_error[i][j] = [ this.infinity, 0 ];
             }
         }
@@ -372,20 +409,40 @@ function AALibrary() {
                 if ( dc.set_from_lex( this.dclex ) ) {
                     var aas = this.aas_for_degenerate_codon( dc );
                     var error = this.error_given_aas_for_pos( i, aas );
-                    var log_diversity = dc.log_diversity();
-                    var prev_diversity = this.divmin_for_error[ i ][ error ][0];
-                    //console.log( "position " + i + " error " + error + " diversity: " + log_diversity );
-                    if ( log_diversity !== dc.infinity && ( prev_diversity === this.infinity || log_diversity < prev_diversity )) {
-                        // store the diversity and information on the degenerate codon that
-                        // produced this level of error
-                        this.divmin_for_error[i][ error ][ 0 ] = log_diversity;
-                        this.divmin_for_error[i][ error ][ 1 ] = this.dclex.index();
+                    if ( error !== this.infinity ) {
+                        var log_diversity = dc.log_diversity();
+                        var prev_diversity = this.divmin_for_error[ i ][ error ][0];
+                        //console.log( "position " + i + " error " + error + " diversity: " + log_diversity );
+                        if ( log_diversity !== dc.infinity && ( prev_diversity === this.infinity || log_diversity < prev_diversity )) {
+                            // store the diversity and information on the degenerate codon that
+                            // produced this level of error
+                            this.divmin_for_error[i][ error ][ 0 ] = log_diversity;
+                            this.divmin_for_error[i][ error ][ 1 ] = this.dclex.index();
+                        }
                     }
                 }
                 this.dclex.increment();
             }
         }
     }
+
+    library.find_positions_wo_viable_solutions = function() {
+        var pos_w_no_viable_solutions = []
+        for ( var i=0; i < this.n_positions; ++i ) {
+            var ok = false;
+            for ( var j=0; j < this.max_per_position_error; ++j ) {
+                if ( this.divmin_for_error[i][j][0] !== this.infinity ) {
+                    ok = true;
+                    break;
+                }
+            }
+            if ( ! ok ) {
+                pos_w_no_viable_solutions.push( i );
+            }
+        }
+        return pos_w_no_viable_solutions;   
+    }
+
                 
     library.optimize_library = function( diversity_cap ) {
         //Run a dynamic programming algorithm to determine the minimum diversity for
@@ -394,7 +451,7 @@ function AALibrary() {
         //error.  This array can be used with the previously-computed divmin_for_error
         //array to figure out which codons should be used at every position.
 
-        this.error_span = this.max_obs * this.n_positions; // edit this to include a stop-codon penalty
+        this.error_span = this.max_per_position_error * this.n_positions; // edit this to include a stop-codon penalty
 
         //assert( hasattr( self, 'divmin_for_error' ) )
         this.dp_divmin_for_error = []
@@ -405,14 +462,14 @@ function AALibrary() {
         for ( var i=0; i < this.n_positions; ++i ) {
             this.dp_divmin_for_error[i] = [];
             this.dp_traceback[i] = [];
-            for ( var j=0; j < this.error_span; ++j ) {
+            for ( var j=0; j <= this.error_span; ++j ) {
                 this.dp_divmin_for_error[i][j] = this.infinity;
                 this.dp_traceback[i][j] = [ this.infinity, this.infinity  ];
             }
         }
 
         // take care of position 0: copy this.divmin_for_error[0] into this.dp_divmin_for_eror
-        for ( var i=0; i<this.max_obs; ++i ) {
+        for ( var i=0; i<= this.max_per_position_error; ++i ) {
             this.dp_divmin_for_error[0][i] = this.divmin_for_error[0][i][0];
             this.dp_traceback[0][i][0] = i;
             this.dp_traceback[0][i][1] = 0;
@@ -420,11 +477,11 @@ function AALibrary() {
 
         for ( var i=1; i < this.n_positions; ++i ) {
             // solve the dynamic programming problem for residues 0..i
-            for ( var j=0; j < this.error_span; ++j ) {
+            for ( var j=0; j <= this.error_span; ++j ) {
                 var j_divmin = this.infinity;
                 var j_traceback = [ this.infinity, this.infinity ];
-                var klimit = Math.min( j, this.max_obs );
-                for ( var k=0; k < klimit; ++k ) {
+                var klimit = Math.min( j, this.max_per_position_error );
+                for ( var k=0; k <= klimit; ++k ) {
                     if ( this.dp_divmin_for_error[i-1][j-k] === this.infinity ) { continue; }
                     if ( this.divmin_for_error[i][k][0] === this.infinity ) { continue; }
                     var divsum = this.divmin_for_error[i][k][0] + this.dp_divmin_for_error[i-1][j-k];
@@ -453,10 +510,10 @@ function AALibrary() {
         //    if this.dp_divmin_for_error[-1][i] != this.infinity :
         //        print "Error of",i,"requires diversity of %5.3f" % this.dp_divmin_for_error[-1][i]
 
-        for ( var i=0; i < this.error_span; ++i ) {
+        for ( var i=0; i <= this.error_span; ++i ) {
             if ( this.dp_divmin_for_error[ this.n_positions-1 ][i] != this.infinity && this.dp_divmin_for_error[ this.n_positions-1 ][i] < log_diversity_cap ) {
                 var best = i;
-                console.log( "Minimum error of " + i + " with log(diversity) of" + this.dp_divmin_for_error[ this.n_positions-1][i] );
+                console.log( "Minimum error of " + i + " with log(diversity) of " + this.dp_divmin_for_error[ this.n_positions-1][i] );
                 break;
             }
         }
@@ -526,14 +583,16 @@ function final_codon_string( position, degenerate_codon, library ) {
 function print_output_codons( library, error_sequence, diversity_cap ) {
     var dc = DegenerateCodon();
     var diversity_sum = 0;
+    var output_codon_string = []
     for ( var i=0; i < library.n_positions; ++i ) {
         var lexind = library.divmin_for_error[ i ][ error_sequence[ i ] ][ 1 ];
         library.dclex.set_from_index(lexind);
         dc.set_from_lex( library.dclex );
         diversity_sum += dc.log_diversity();
-        console.log( final_codon_string( i, dc, library ) );
+        output_codon_string.push( final_codon_string( i, dc, library ) );
     }
-    console.log( "Max log diversity: " + Math.log( diversity_cap ).toPrecision( 3 ) + "Theorical diversity" + diversity_sum.toPrecision( 3 ) );
+    output_codon_string.push( "Max log diversity: " + Math.log( diversity_cap ).toPrecision( 5 ) + " Theorical diversity " + diversity_sum.toPrecision( 5 ) );
+    return output_codon_string.join("\n");
 }
 
 var library = AALibrary();
@@ -548,7 +607,8 @@ function go() {
 //
 //    return;
 
-    library.load_library();
+    var csv_contents = document.getElementById( "aaobs" ).value;
+    library.load_library( csv_contents );
     library.compute_smallest_diversity_for_all_errors();
     var diversity_cap = 320000000;
     var best = library.optimize_library( diversity_cap );

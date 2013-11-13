@@ -140,9 +140,28 @@
     </tr>
 </table>
 
-<div button class="buttonlink" id="add">Add column</div>
-<div button class="buttonlink" id="delcol">Delete Column</div>
+<div class="buttonlink" id="add">Add column</div>
+<div class="buttonlink" id="delcol">Delete Column</div>
+<br><br>
+<table>
+<tr>
+<td>Library size upper limit (required)</td>
+<td><input id=libsize_upper type=text size=8 value="e.g. 3.2e9"></td>
+</tr>
+<tr>
+<td>Library size lower limit (optional; only one answer computed if left blank)</td>
+<td><input id=libsize_lower type=text size=8></td>
+</tr>
+<tr>
+<td>Stop codon penalty (optional; applied at all positions; overrides penalties given in the table above)</td>
+<td><input id=stop_codon_penalty type=text size=8></td>
+</tr>
+</table>
+<br><br>
+
 <div button class="buttonlink" id="launchbutton">Go!</div>
+<br><br>
+<div id=resultdiv ></div>
 
 <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="opt_deg_codons.js"></script>
