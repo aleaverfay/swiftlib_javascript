@@ -1,3 +1,4 @@
+/// Copyright 2013, Andrew Leaver-Fay
 
 function strip_whitespace( str ) {
     return str.replace(/^\s+|\s+$/g,'');
@@ -577,8 +578,10 @@ function record_codon_data( position, degenerate_codon, library ) {
 
     codon_data.present_string = "";
     codon_data.error = 0;
+    var aa_count = 0;
     for ( var i=0; i < aas_present.length; ++i ) {
         if ( aas_present[i] ) {
+            ++aa_count;
             codon_data.present_string += " " + library.gcmapper.aastr_for_integer( i );
             if ( library.required[position][i] ) {
                 codon_data.present_string += "(*)";
@@ -599,14 +602,17 @@ function record_codon_data( position, degenerate_codon, library ) {
         }
     }
 
-    codon_data.log_diversity = degenerate_codon.log_diversity();
+    codon_data.log_dna_diversity = degenerate_codon.log_diversity();
+    codon_data.aa_count = aa_count;
+    codon_data.log_aa_diversity = Math.log( aa_count );
 
     return codon_data;
 }    
 
 function report_output_library_data( library, error_sequence, diversity_cap ) {
     var dc = DegenerateCodon();
-    var diversity_sum = 0;
+    var dna_diversity_sum = 0;
+    var aa_diversity_sum = 0;
     var output_library_data = {};
     output_library_data.positions = [];
     output_library_data.error = 0;
@@ -614,11 +620,14 @@ function report_output_library_data( library, error_sequence, diversity_cap ) {
         var lexind = library.divmin_for_error[ i ][ error_sequence[ i ] ][ 1 ];
         library.dclex.set_from_index(lexind);
         dc.set_from_lex( library.dclex );
-        diversity_sum += dc.log_diversity();
-        output_library_data.positions.push( record_codon_data( i, dc, library ) );
+        var codon_data =  record_codon_data( i, dc, library );
+        dna_diversity_sum += codon_data.log_dna_diversity;
+        aa_diversity_sum +=  codon_data.log_aa_diversity;
+        output_library_data.positions.push( codon_data );
         output_library_data.error += output_library_data.positions[ i ].error;
     }
-    output_library_data.diversity = Math.exp( diversity_sum );
+    output_library_data.dna_diversity = Math.exp( dna_diversity_sum );
+    output_library_data.aa_diversity = Math.exp( aa_diversity_sum );
     return output_library_data;
 }
 

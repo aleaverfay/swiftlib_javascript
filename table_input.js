@@ -1,3 +1,5 @@
+/// Copyright 2013, Andrew Leaver-Fay
+
 function aacountcell_valid(cell_val) {
     var cell_empty = cell_val === "";
     var cell_int = parseInt(cell_val, 10);
@@ -120,14 +122,14 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
         var table_i = [];
         var error_trace = library.traceback_from_error_level( error_list[i] );
         var i_data = report_output_library_data( library, error_trace, diversity_cap );
-        var i_summary = ["<p> Result #", (i+1).toString(), ".  Error: ", error_list[i].toString(), " Diversity: ", i_data.diversity.toExponential(3), "</p>" ];
+        var i_summary = ["<p> Result #<b>", (i+1).toString(), "</b>.  Error: <b>", error_list[i].toString(), "</b> Theoretical Diversity (DNA): <b>", i_data.dna_diversity.toExponential(3), "</b> Amino-acid diversity: <b>", i_data.aa_diversity.toExponential(3), "</b></p>" ];
         var table = [];
         if ( i === 0 ) {
             table.push( "<table id=scrollhere >" );
         } else {
             table.push( "<table>" );
         }
-        table.push( "<tr><td>Pos</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td>Diversity</td></tr>" );
+        table.push( "<tr><td>Pos</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td></tr>" );
         for ( var j=0; j < library.n_positions; ++j ) {
             var j_pos = i_data.positions[j];
             table.push( "<tr>" );
@@ -136,7 +138,8 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
             table.push( [ "<td>", j_pos.present_string,"</td>" ].join("") );
             table.push( [ "<td>", j_pos.absent_string,"</td>" ].join("") );
             table.push( [ "<td>", j_pos.error.toString(), "</td>" ].join("") );
-            table.push( [ "<td>", Math.exp( j_pos.log_diversity ).toExponential(2), "</td>" ].join("") );
+            table.push( [ "<td>", Math.round(Math.exp( j_pos.log_dna_diversity )), "</td>" ].join("") );
+            table.push( [ "<td>", j_pos.aa_count, "</td>" ].join("") );
             table.push( "</tr>" );
         }
         table.push( "</table>" );
@@ -165,8 +168,8 @@ function validate_inputs_and_launch() {
     
     // also validate the stop-codon penalty, and the upper and lower bounds cells.
     var scp_str = $("#stop_codon_penalty").val();
-    var scp_int = parseInt( scp_str );
-    if ( scp_str != "" && ( scp_int != scp_int || scp_int < 0 ) ) {
+    var scp_int = Math.abs( parseInt( scp_str ) );
+    if ( scp_str != "" && ( scp_int != scp_int ) ) {
         $("#stop_codon_penalty").css("background-color","pink");
         any_errors = true;
     } else {

@@ -1,3 +1,9 @@
+p {
+  width:700px;
+}
+li {
+   width:500px;
+}
 .aacountcell {
     color:blue;
     size:4;
