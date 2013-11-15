@@ -596,7 +596,7 @@ function record_codon_data( position, degenerate_codon, library ) {
 
     codon_data.absent_string = "";
     for ( var i=0; i < aas_present.length; ++i ) {
-        if ( orig_obs[i] !== 0 && ! aas_present[i] ) {
+        if ( orig_obs[i] > 0 && ! aas_present[i] ) {
             codon_data.absent_string += " " + library.gcmapper.aastr_for_integer( i ) + "(" + orig_obs[i] + ")";
             codon_data.error += orig_obs[i];
         }
