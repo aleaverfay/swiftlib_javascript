@@ -17,7 +17,7 @@ h1 {
 }
 
 .aacountcell {
-    color:blue;
+    color:#93B300;
     size:4;
 }
 .mytable {
@@ -40,4 +40,20 @@ h1 {
     text-align:center;
     //text-decoration:none;
     //font-weight:50;
+}
+
+.result_table {
+    border: 1px solid black;
+    border-collapse:collapse;
+}
+.result_table td
+{
+  border: 1px solid black;
+  padding: 4px;
+}
+.rtheader {
+    background-color:#93B300;
+}
+.rteven {
+    background-color:#EAF2D3;
 }
