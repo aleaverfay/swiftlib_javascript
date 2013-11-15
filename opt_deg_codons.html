@@ -1,6 +1,6 @@
 <html>
 <head>
-<!link rel="stylesheet" type="text/css" href="../default.css">
+<link rel="stylesheet" type="text/css" href="../default.css">
 <link rel="stylesheet" type="text/css" href="mystyle.css">
 </head>
 <body>
@@ -84,6 +84,12 @@ any manually-given stop-codon penalties that are given in the table.  In this fi
 may be given as either a positive or negative integer (both values will be treated as a penalty). In 
 the table, stop codon penalties should be given in the "STOP" row as a negative integer (positive values are
 treated as bonuses; give a positive value if you want to favor the inclusion of a stop codon).
+<li>To save the data you have entered in the table below for future sessions, switch to the Text view using
+the radio button.  This will display your data in a "comma separated value" (CSV) format.  Copy your data
+out of the text box that appears and put it in a document for later use.  You may load data into the table
+by pasting the data from a previously-saved table and clicking on the "Update Table" button (which is
+only visible in the Text view).  If you get an error message saying that it found 42 columns instead of
+21, make sure you clear out the text window before you paste your data in it.
 </ul>
 
 <p>
@@ -91,10 +97,11 @@ Please direct questions to: leaverfa at email dot unc dot edu.
 </p>
 
 <div id="tab_vs_csv_radio">
+View:
 <input type="radio" name="tab_vs_csv" value="tab" checked >Table
 <input type="radio" name="tab_vs_csv" value="csv"> Text <br>
 </div>
-
+<br>
 <div id=text_aacounts hidden >
 <textarea id=csvaacounts rows="22" columns="100" >
 </textarea>

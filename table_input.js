@@ -125,14 +125,18 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
         var i_summary = ["<p> Result #<b>", (i+1).toString(), "</b>.  Error: <b>", error_list[i].toString(), "</b> Theoretical Diversity (DNA): <b>", i_data.dna_diversity.toExponential(3), "</b> Amino-acid diversity: <b>", i_data.aa_diversity.toExponential(3), "</b></p>" ];
         var table = [];
         if ( i === 0 ) {
-            table.push( "<table id=scrollhere >" );
+            table.push( "<table id=scrollhere class=result_table>" );
         } else {
-            table.push( "<table>" );
+            table.push( "<table class=result_table>" );
         }
-        table.push( "<tr><td>Pos</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td></tr>" );
+        table.push( "<tr class=rtheader><td>Pos</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td></tr>" );
         for ( var j=0; j < library.n_positions; ++j ) {
             var j_pos = i_data.positions[j];
-            table.push( "<tr>" );
+            if ( j % 2 === 0 ) {
+                table.push( "<tr class=rteven>" );
+            } else {
+                table.push( "<tr class=rtodd>" );
+            }
             table.push( [ "<td>", j_pos.orig_pos_string, "</td>" ].join("") );
             table.push( [ "<td>", j_pos.codon_string,"</td>" ].join("") );
             table.push( [ "<td>", j_pos.present_string,"</td>" ].join("") );
