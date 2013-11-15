@@ -1,9 +1,21 @@
+* {
+  margin-left: 20px;
+  padding: 0px;
+}
+body {
+ font-size: 14px;
+}
+
 p {
-  width:700px;
+  width:600px;
 }
 li {
    width:500px;
 }
+h1 {
+    text-transform:none;
+}
+
 .aacountcell {
     color:blue;
     size:4;
