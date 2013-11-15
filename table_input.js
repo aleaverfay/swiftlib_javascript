@@ -203,7 +203,7 @@ function populate_table_from_csv() {
     var trs = $('#aacounts').find('tr');
     var ncolumns_curr = $(trs[0]).find('td').length - 1;
     if ( ncolumns_curr < ncols_row0 ) {
-        for ( var i=ncolumns_curr; i <= ncols_row0; ++i ) {
+        for ( var i=ncolumns_curr; i < ncols_row0; ++i ) {
             add_column_to_aacounts();
         }
     } else {
@@ -239,7 +239,7 @@ function handle_tab_vs_csv_change( rad_button ) {
 }
 
 
-function validate_inputs_and_launch() {
+function validate_inputs_and_launch( launch_button ) {
     var trs = $('#aacounts').find('tr');
     var any_errors = false;
     for (var i = 0; i < trs.length; ++i) {
@@ -257,7 +257,7 @@ function validate_inputs_and_launch() {
     
     // also validate the stop-codon penalty, and the upper and lower bounds cells.
     var scp_str = $("#stop_codon_penalty").val();
-    var scp_int = Math.abs( parseInt( scp_str ) );
+    var scp_int = -1 * Math.abs( parseInt( scp_str ) );
     if ( scp_str != "" && ( scp_int != scp_int ) ) {
         $("#stop_codon_penalty").css("background-color","pink");
         any_errors = true;
@@ -291,35 +291,40 @@ function validate_inputs_and_launch() {
         return;
     }
 
+    $(launch_button).html("Working");
 
-    var library = AALibrary();
-    load_library_from_table( library, scp_int );
-    library.compute_smallest_diversity_for_all_errors();
-    if ( verify_solution_exists( library )) {
-        library.optimize_library();
-        if ( lb_float != lb_float ) {
-            var error_list = [ library.find_minimal_error_beneath_diversity_cap( ub_float ) ];
+    // do the actual computation after we've updated the DOM.
+    setTimeout( function () {
+        var library = AALibrary();
+        load_library_from_table( library, scp_int );
+        library.compute_smallest_diversity_for_all_errors();
+        if ( verify_solution_exists( library )) {
+            library.optimize_library();
+            if ( lb_float != lb_float ) {
+                var error_list = [ library.find_minimal_error_beneath_diversity_cap( ub_float ) ];
+            } else {
+                var error_list = library.errors_in_diversity_range( ub_float, lb_float );
+                console.log( "Error list: ", error_list.join(",") );
+            }
+            var output_html = output_tables_from_error_values( library, error_list, ub_float );
+    
+            $('#resultdiv').html( output_html );
+    
         } else {
-            var error_list = library.errors_in_diversity_range( ub_float, lb_float );
-            console.log( "Error list: ", error_list.join(",") );
+            $('#resultdiv').html( "<p id=scrollhere > No solution exists for the given set of required (*) and forbidden (!) amino acids </p>" );
         }
-        var output_html = output_tables_from_error_values( library, error_list, ub_float );
-
-        $('#resultdiv').html( output_html );
-
-    } else {
-        $('#resultdiv').html( "<p id=scrollhere > No solution exists for the given set of required (*) and forbidden (!) amino acids </p>" );
-    }
-    $('#scrollhere').scrollIntoView();
+        $(launch_button).text("Go!");
+        $('#scrollhere').scrollIntoView();
+    }, 1 );
         
 }
 
 $(document).ready(function () {
         $('#add').click( add_column_to_aacounts );
         $('#delcol').click( delete_column_from_aacounts );
-        $('.aacountcell').blur( function() {validate_aacount_cell(this)} );
-        $('.seqposcell').blur( function() { validate_seqpos_cell(this)} );
-        $('#launchbutton').click( validate_inputs_and_launch );
+        $('.aacountcell').blur( function() {validate_aacount_cell(this);} );
+        $('.seqposcell').blur( function() { validate_seqpos_cell(this);} );
+        $('#launchbutton').click( function() { validate_inputs_and_launch(this); } );
         $("#tab_vs_csv_radio input:radio").click( function() { handle_tab_vs_csv_change(this); } );
         $("#table_from_csv").click( populate_table_from_csv );
 })
