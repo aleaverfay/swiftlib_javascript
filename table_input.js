@@ -1,13 +1,15 @@
 /// Copyright 2013, Andrew Leaver-Fay
 
 function aacountcell_valid(cell_val) {
-    var cell_empty = cell_val === "";
+    if ( cell_val === "" ) return true;
+    if ( cell_val === "!" ) return true;
+    if ( cell_val === "*" ) return true;
     var cell_int = parseInt(cell_val, 10);
     var cell_notint = (cell_int !== cell_int);
-    var cell_bang = cell_val === "!";
-    var cell_star = cell_val === "*";
-    var cell_ok = cell_empty || !cell_notint || cell_bang || cell_star;
-    return cell_ok;
+    if ( cell_notint ) return false;
+    var cell_float = parseFloat( cell_val );
+    if ( cell_int != cell_float ) return false; // don't accept floating point input
+    return true;
 }
 
 function add_column_to_aacounts() {
