@@ -1,15 +1,16 @@
 <html>
 <head>
+<link rel="stylesheet" type="text/css" href="../default.css">
 <link rel="stylesheet" type="text/css" href="mystyle.css">
 </head>
 <body>
 
-<h1>Degenerate Codon Library Optimizer</h1>
+<h1>SwiftLib: degenerate codon library optimizer</h1>
 
 <p>
 This program optimizes a degenerate codon library to cover the desired
 set of amino acids at several positions while staying within a diversity
-limit for the library.
+limit for the library.  It is a fast way to generate small libraries.
 </p>
 
 <p>
@@ -41,11 +42,12 @@ for problems where coverage is unattainable.
 The program works by dynamic programming.  If all of the errors are integers,
 then it is possible to ask, for each position, what degenerate codon has
 the smallest diversity given that it produces a given error.  The smallest
-library for positions [1..<i>i</i>] given a particular error, can be readily
+library for positions [1..<i>i</i>] given a particular error can be readily
 computed using a simple recurrence.  The best library is the one with the smallest
 error with a diversity below the desired cap.  The running time is <i>O(n**2 m**2)</i> for
 <i>n</i> positions and <i>m</i> error gradations.  In the case above, n=15, and
-m=100.
+m=100 (the maximum error would be 100 given by a codon that doesn't contain any
+of the desired amino acids; the larger the maximum error the longer the running time).
 </p>
 
 <p>
