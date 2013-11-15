@@ -90,14 +90,14 @@ function load_library_from_table( library, scp_int ) {
             else {
                 jcontents = strip_whitespace( $($(tds[j]).find("input")[0]).val() );
                 if ( i !== 0 && jcontents === "" ) { jcontents = "0"; }
-                if ( i == 20 && scp_int !== 0 ) { jcontents = scp_int.toString(); }
+                if ( i == 21 && scp_int !== 0 ) { jcontents = scp_int.toString(); }
             }
             icols.push( jcontents );
         }
         rows.push( icols.join(",")  );
     }
     var csv_string = rows.join( "\n" );
-    csv_string = tims_problem();
+    //csv_string = tims_problem();
 
     console.log( csv_string );
     library.load_library( csv_string );
@@ -149,6 +149,95 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
     }
     return output_html.join("\n");
 }
+
+function create_csv_from_table() {
+    var table_contents = [];
+    var trs = $('#aacounts').find('tr');
+    for ( var i = 0; i < trs.length; ++i ) {
+        var row_i = [];
+        var tds = $(trs[i]).find('td');
+        for ( var j = 1; j < tds.length; ++j ) {
+            var jval = $($(tds[j]).find("input")[0]).val();
+            console.log( "row " + i + " column " + j + " : " + jval );
+            row_i.push( jval );
+        }
+        table_contents.push( row_i.join(",") );
+    }
+    return table_contents.join("\n");
+}
+
+function populate_table_from_csv() {
+    var csv_contents = $('#csvaacounts').val().split("\n");
+    var csv_data = []
+    var nrows = csv_contents.length;
+    if ( nrows != 22 ) {
+        var msg = "<p>Could not update table from CSV contents.  Expected to find 22 rows, but found " + nrows + "</p>";
+        $('#update_result').html(msg).css("color","red").show();
+        return;
+    }
+    csv_data[0] = csv_contents[0].split(",");
+    var ncols_row0 = csv_data[0].length;
+    var badrows = [];
+    for ( var i = 1; i < nrows; ++i ) {
+        csv_data[i] = csv_contents[i].split(",");
+        if ( csv_data[i].length != ncols_row0 ) {
+            badrows.push( i+1 );
+        }
+    }
+    if ( badrows.length != 0 ) {
+        var msg;
+        if ( badrows.length == 1 ) {
+            msg = "<p>Could not update table from CSV contents.  Expected all rows to have " + ncols_row0 +
+                   " columns, the same number as the first row, but found " + badrows.length + " that does not." +
+                   " Row " + badrows.join(", ") + " has a different number of columns</p>";
+        } else {
+            msg = "<p>Could not update table from CSV contents.  Expected all rows to have " + ncols_row0 +
+                   " columns, the same number as the first row, but found " + badrows.length + " that do not." +
+                   " Rows " + badrows.join(", ") + " have a different number of columns</p>";
+        }
+        $('#update_result').html(msg).css("color","red").show();
+        return;
+    }
+
+    // resize the table
+    var trs = $('#aacounts').find('tr');
+    var ncolumns_curr = $(trs[0]).find('td').length - 1;
+    if ( ncolumns_curr < ncols_row0 ) {
+        for ( var i=ncolumns_curr; i <= ncols_row0; ++i ) {
+            add_column_to_aacounts();
+        }
+    } else {
+        for ( var i=ncolumns_curr; i > ncols_row0; --i ) {
+            delete_column_from_aacounts();
+        }
+    }
+
+    // now populate the table from the csv contents 
+    for ( var i=0; i < trs.length; ++i ) {
+        var tds = $(trs[i]).find("td");
+        var row_i = csv_data[i];
+        for ( var j=0; j < row_i.length; ++j ) {
+            $($(tds[j+1]).find("input")[0]).val( row_i[j] );
+        }
+    }
+    $('#update_result').html('<p>Successfully updated the table</p>').css("color","green").show();
+}
+
+function handle_tab_vs_csv_change( rad_button ) {
+    //var rad_button = $("input[name='tab_vs_csv']")
+    //alert( "made it!" + $(rad_button).val() );
+    if ( $(rad_button).val() == 'csv' ) {
+        var new_csv = create_csv_from_table();
+        $('#csvaacounts').text( new_csv );
+        $('#text_aacounts').show();
+        $('#update_result').hide();
+        $('#table_aacounts').hide();
+    } else {
+        $('#table_aacounts').show();
+        $('#text_aacounts').hide();
+    }
+}
+
 
 function validate_inputs_and_launch() {
     var trs = $('#aacounts').find('tr');
@@ -231,6 +320,8 @@ $(document).ready(function () {
         $('.aacountcell').blur( function() {validate_aacount_cell(this)} );
         $('.seqposcell').blur( function() { validate_seqpos_cell(this)} );
         $('#launchbutton').click( validate_inputs_and_launch );
+        $("#tab_vs_csv_radio input:radio").click( function() { handle_tab_vs_csv_change(this); } );
+        $("#table_from_csv").click( populate_table_from_csv );
 })
 
 // Local Variables:
