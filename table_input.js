@@ -99,7 +99,6 @@ function load_library_from_table( library, scp_int ) {
         rows.push( icols.join(",")  );
     }
     var csv_string = rows.join( "\n" );
-    csv_string = tims_problem();
 
     console.log( csv_string );
     library.load_library( csv_string );
@@ -276,7 +275,6 @@ function validate_inputs_and_launch( launch_button ) {
 
     var ub_str = $('#libsize_upper').val();
     var ub_float = parseFloat( ub_str );
-    ub_float = 1e8; // TEMP!
     if ( ub_float != ub_float || ub_float < 0 ) {
         $('#libsize_upper').css("background-color","pink");
         any_errors = true;
@@ -293,7 +291,7 @@ function validate_inputs_and_launch( launch_button ) {
         $('#libsize_lower').css("background-color","white");
     }
         
-    if ( false ) { // ( any_errors ) { // TEMP!!
+    if ( any_errors ) {
         alert( "Errors in inputs" );
         return;
     }
