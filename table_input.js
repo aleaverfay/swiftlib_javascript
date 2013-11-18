@@ -99,7 +99,7 @@ function load_library_from_table( library, scp_int ) {
         rows.push( icols.join(",")  );
     }
     var csv_string = rows.join( "\n" );
-    //csv_string = tims_problem();
+    csv_string = tims_problem();
 
     console.log( csv_string );
     library.load_library( csv_string );
@@ -276,6 +276,7 @@ function validate_inputs_and_launch( launch_button ) {
 
     var ub_str = $('#libsize_upper').val();
     var ub_float = parseFloat( ub_str );
+    ub_float = 1e8; // TEMP!
     if ( ub_float != ub_float || ub_float < 0 ) {
         $('#libsize_upper').css("background-color","pink");
         any_errors = true;
@@ -292,7 +293,7 @@ function validate_inputs_and_launch( launch_button ) {
         $('#libsize_lower').css("background-color","white");
     }
         
-    if ( any_errors ) {
+    if ( false ) { // ( any_errors ) { // TEMP!!
         alert( "Errors in inputs" );
         return;
     }
@@ -301,6 +302,7 @@ function validate_inputs_and_launch( launch_button ) {
 
     // do the actual computation after we've updated the DOM.
     setTimeout( function () {
+        var starttime = new Date().getTime();
         var library = AALibrary();
         load_library_from_table( library, scp_int );
         library.compute_smallest_diversity_for_all_errors();
@@ -312,7 +314,8 @@ function validate_inputs_and_launch( launch_button ) {
                 var error_list = library.errors_in_diversity_range( ub_float, lb_float );
                 console.log( "Error list: ", error_list.join(",") );
             }
-            var output_html = output_tables_from_error_values( library, error_list, ub_float );
+            var stoptime = new Date().getTime();
+            var output_html = "Running time took " + (( stoptime - starttime ) / 1000 )+ " seconds<br>" + output_tables_from_error_values( library, error_list, ub_float );
     
             $('#resultdiv').html( output_html );
     

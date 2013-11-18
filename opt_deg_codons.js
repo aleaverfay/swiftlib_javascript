@@ -404,11 +404,11 @@ function AALibrary() {
         var dims = [ 16, 16, 16 ]; //this really could be 15^3 instead, since 0 doesn't represent a valid degenerate base index
         this.dclex = LexicographicalIterator( dims );
         var dc = DegenerateCodon();
-        for ( var i=0; i < this.n_positions; ++i ) {
-            this.dclex.reset();
-            while ( ! this.dclex.at_end ) {
-                if ( dc.set_from_lex( this.dclex ) ) {
-                    var aas = this.aas_for_degenerate_codon( dc );
+        this.dclex.reset();
+        while ( ! this.dclex.at_end ) {
+            if ( dc.set_from_lex( this.dclex ) ) {
+                var aas = this.aas_for_degenerate_codon( dc );
+                for ( var i=0; i < this.n_positions; ++i ) {
                     var error = this.error_given_aas_for_pos( i, aas );
                     if ( error !== this.infinity ) {
                         var log_diversity = dc.log_diversity();
@@ -422,8 +422,8 @@ function AALibrary() {
                         }
                     }
                 }
-                this.dclex.increment();
             }
+            this.dclex.increment();
         }
     }
 
