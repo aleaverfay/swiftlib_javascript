@@ -395,8 +395,10 @@ function AALibrary() {
 
     library.compute_smallest_diversity_for_all_errors = function () {
         this.divmin_for_error = [];
+        this.errors_for_position = [];
         for ( var i=0; i < this.n_positions; ++i ) {
-            this.divmin_for_error[i] = []
+            this.divmin_for_error[i] = [];
+            this.errors_for_position[i] = [];
             for ( var j=0; j <= this.max_per_position_error; ++j ) {
                 this.divmin_for_error[i][j] = [ this.infinity, 0 ];
             }
@@ -417,6 +419,9 @@ function AALibrary() {
                         if ( log_diversity !== dc.infinity && ( prev_diversity === this.infinity || log_diversity < prev_diversity )) {
                             // store the diversity and information on the degenerate codon that
                             // produced this level of error
+                            if ( prev_diversity === this.infinity ) {
+                                this.errors_for_position[i].push( error );
+                            }
                             this.divmin_for_error[i][ error ][ 0 ] = log_diversity;
                             this.divmin_for_error[i][ error ][ 1 ] = this.dclex.index();
                         }
@@ -424,6 +429,10 @@ function AALibrary() {
                 }
             }
             this.dclex.increment();
+        }
+        for ( var i=0; i < this.n_positions; ++i ) {
+            this.errors_for_position[i].sort();
+            console.log( "errors " + i + ": " + this.errors_for_position[i].join(", ") );
         }
     }
 
@@ -463,33 +472,41 @@ function AALibrary() {
         for ( var i=0; i < this.n_positions; ++i ) {
             this.dp_divmin_for_error[i] = [];
             this.dp_traceback[i] = [];
-            for ( var j=0; j <= this.error_span; ++j ) {
-                this.dp_divmin_for_error[i][j] = this.infinity;
-                this.dp_traceback[i][j] = [ this.infinity, this.infinity  ];
-            }
+            //for ( var j=0; j <= this.error_span; ++j ) {
+            //    this.dp_divmin_for_error[i][j] = this.infinity;
+            //    this.dp_traceback[i][j] = [ this.infinity, this.infinity  ];
+            //}
         }
 
         // take care of position 0: copy this.divmin_for_error[0] into this.dp_divmin_for_eror
         for ( var i=0; i<= this.max_per_position_error; ++i ) {
-            this.dp_divmin_for_error[0][i] = this.divmin_for_error[0][i][0];
-            this.dp_traceback[0][i][0] = i;
-            this.dp_traceback[0][i][1] = 0;
+            if ( this.divmin_for_error[0][i][0] != this.infinity ) {
+                this.dp_divmin_for_error[0][i] = this.divmin_for_error[0][i][0];
+                this.dp_traceback[0][i]        = [ i, 0 ];
+            }
         }
 
         for ( var i=1; i < this.n_positions; ++i ) {
             // solve the dynamic programming problem for residues 0..i
+            var i_errors = this.errors_for_position[i];
+            var i_num_errors = i_errors.length;
             for ( var j=0; j <= this.error_span; ++j ) {
                 var j_divmin = this.infinity;
                 var j_traceback = [ this.infinity, this.infinity ];
                 var klimit = Math.min( j, this.max_per_position_error );
-                for ( var k=0; k <= klimit; ++k ) {
-                    if ( this.dp_divmin_for_error[i-1][j-k] === this.infinity ) { continue; }
-                    if ( this.divmin_for_error[i][k][0] === this.infinity ) { continue; }
-                    var divsum = this.divmin_for_error[i][k][0] + this.dp_divmin_for_error[i-1][j-k];
+                for ( var k=0; k < i_num_errors; ++k ) {
+                    var kerror = i_errors[k];
+                    if ( kerror > klimit ) break;
+                    if ( ! this.dp_divmin_for_error[i-1].hasOwnProperty( j-kerror ) ) { continue; }
+
+                    //if ( this.dp_divmin_for_error[i-1][j-kerror] === this.infinity ) { continue; }
+                    //if ( this.divmin_for_error[i][kerror][0] === this.infinity ) { continue; }
+
+                    var divsum = this.divmin_for_error[i][kerror][0] + this.dp_divmin_for_error[i-1][j-kerror];
                     if ( j_divmin === this.infinity || divsum < j_divmin ) {
                         j_divmin = divsum;
-                        j_traceback[0] = k;
-                        j_traceback[1] = j-k;
+                        j_traceback[0] = kerror;
+                        j_traceback[1] = j-kerror;
                     }
                 }
                 if ( j_divmin !== this.infinity ) {
