@@ -435,7 +435,6 @@ function AALibrary() {
         }
         for ( var i=0; i < this.n_positions; ++i ) {
             this.errors_for_position[i].sort( function(a,b){return a-b} );
-            console.log( "errors " + i + ": " + this.errors_for_position[i].join(", ") );
         }
     }
 
@@ -498,23 +497,22 @@ function AALibrary() {
             var idivmin_for_error = this.divmin_for_error[i]
             for ( var j=0; j <= this.error_span; ++j ) {
                 var j_divmin = this.infinity;
-                var j_traceback = [ this.infinity, this.infinity ];
-                var klimit = Math.min( j, this.max_per_position_error );
+                var j_traceback = this.infinity;
                 for ( var k=0; k < i_num_errors; ++k ) {
                     var kerror = i_errors[k];
                     if ( kerror > j ) break;
-                    if ( ! iprev_dp_divmin_for_error.hasOwnProperty( j-kerror ) ) { continue; }
+                    var iprev_error = iprev_dp_divmin_for_error[j-kerror];
+                    if ( iprev_error === undefined ) continue;
 
-                    var divsum = idivmin_for_error[kerror] + iprev_dp_divmin_for_error[j-kerror];
+                    var divsum = idivmin_for_error[kerror] + iprev_error;
                     if ( j_divmin === this.infinity || divsum < j_divmin ) {
                         j_divmin = divsum;
-                        j_traceback[0] = kerror;
-                        j_traceback[1] = j-kerror;
+                        j_traceback = kerror;
                     }
                 }
                 if ( j_divmin !== this.infinity ) {
                     this.dp_divmin_for_error[i][j] = j_divmin;
-                    this.dp_traceback[i][j] = j_traceback;
+                    this.dp_traceback[i][j] = [ j_traceback, j-j_traceback ];
                 }
             }
         }
