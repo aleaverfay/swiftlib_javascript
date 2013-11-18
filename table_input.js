@@ -234,7 +234,7 @@ function handle_tab_vs_csv_change( rad_button ) {
     //alert( "made it!" + $(rad_button).val() );
     if ( $(rad_button).val() == 'csv' ) {
         var new_csv = create_csv_from_table();
-        $('#csvaacounts').text( new_csv );
+        $('#csvaacounts').val( new_csv );
         $('#text_aacounts').show();
         $('#update_result').hide();
         $('#table_aacounts').hide();
