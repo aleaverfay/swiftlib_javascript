@@ -395,12 +395,15 @@ function AALibrary() {
 
     library.compute_smallest_diversity_for_all_errors = function () {
         this.divmin_for_error = [];
+        this.codon_for_error = [];
         this.errors_for_position = [];
         for ( var i=0; i < this.n_positions; ++i ) {
             this.divmin_for_error[i] = [];
+            this.codon_for_error[i]  = [];
             this.errors_for_position[i] = [];
             for ( var j=0; j <= this.max_per_position_error; ++j ) {
-                this.divmin_for_error[i][j] = [ this.infinity, 0 ];
+                this.divmin_for_error[i][j] = this.infinity;
+                this.codon_for_error[i][j]  = 0;
             }
         }
         var dims = [ 16, 16, 16 ]; //this really could be 15^3 instead, since 0 doesn't represent a valid degenerate base index
@@ -414,7 +417,7 @@ function AALibrary() {
                     var error = this.error_given_aas_for_pos( i, aas );
                     if ( error !== this.infinity ) {
                         var log_diversity = dc.log_diversity();
-                        var prev_diversity = this.divmin_for_error[ i ][ error ][0];
+                        var prev_diversity = this.divmin_for_error[ i ][ error ];
                         //console.log( "position " + i + " error " + error + " diversity: " + log_diversity );
                         if ( log_diversity !== dc.infinity && ( prev_diversity === this.infinity || log_diversity < prev_diversity )) {
                             // store the diversity and information on the degenerate codon that
@@ -422,8 +425,8 @@ function AALibrary() {
                             if ( prev_diversity === this.infinity ) {
                                 this.errors_for_position[i].push( error );
                             }
-                            this.divmin_for_error[i][ error ][ 0 ] = log_diversity;
-                            this.divmin_for_error[i][ error ][ 1 ] = this.dclex.index();
+                            this.divmin_for_error[i][ error ] = log_diversity;
+                            this.codon_for_error[i][ error ]  = this.dclex.index();
                         }
                     }
                 }
@@ -431,7 +434,7 @@ function AALibrary() {
             this.dclex.increment();
         }
         for ( var i=0; i < this.n_positions; ++i ) {
-            this.errors_for_position[i].sort();
+            this.errors_for_position[i].sort( function(a,b){return a-b} );
             console.log( "errors " + i + ": " + this.errors_for_position[i].join(", ") );
         }
     }
@@ -441,7 +444,7 @@ function AALibrary() {
         for ( var i=0; i < this.n_positions; ++i ) {
             var ok = false;
             for ( var j=0; j < this.max_per_position_error; ++j ) {
-                if ( this.divmin_for_error[i][j][0] !== this.infinity ) {
+                if ( this.divmin_for_error[i][j] !== this.infinity ) {
                     ok = true;
                     break;
                 }
@@ -455,13 +458,14 @@ function AALibrary() {
 
                 
     library.optimize_library = function() {
+
         //Run a dynamic programming algorithm to determine the minimum diversity for
         //every error level, and return an array of error levels for each position
         //that describes the library that fits under the diversity cap with the smallest
         //error.  This array can be used with the previously-computed divmin_for_error
         //array to figure out which codons should be used at every position.
 
-        this.error_span = this.max_per_position_error * this.n_positions; // edit this to include a stop-codon penalty
+        this.error_span = this.max_per_position_error * this.n_positions;
 
         //assert( hasattr( self, 'divmin_for_error' ) )
         this.dp_divmin_for_error = []
@@ -480,8 +484,8 @@ function AALibrary() {
 
         // take care of position 0: copy this.divmin_for_error[0] into this.dp_divmin_for_eror
         for ( var i=0; i<= this.max_per_position_error; ++i ) {
-            if ( this.divmin_for_error[0][i][0] != this.infinity ) {
-                this.dp_divmin_for_error[0][i] = this.divmin_for_error[0][i][0];
+            if ( this.divmin_for_error[0][i] != this.infinity ) {
+                this.dp_divmin_for_error[0][i] = this.divmin_for_error[0][i];
                 this.dp_traceback[0][i]        = [ i, 0 ];
             }
         }
@@ -490,19 +494,18 @@ function AALibrary() {
             // solve the dynamic programming problem for residues 0..i
             var i_errors = this.errors_for_position[i];
             var i_num_errors = i_errors.length;
+            var iprev_dp_divmin_for_error = this.dp_divmin_for_error[ i-1 ];
+            var idivmin_for_error = this.divmin_for_error[i]
             for ( var j=0; j <= this.error_span; ++j ) {
                 var j_divmin = this.infinity;
                 var j_traceback = [ this.infinity, this.infinity ];
                 var klimit = Math.min( j, this.max_per_position_error );
                 for ( var k=0; k < i_num_errors; ++k ) {
                     var kerror = i_errors[k];
-                    if ( kerror > klimit ) break;
-                    if ( ! this.dp_divmin_for_error[i-1].hasOwnProperty( j-kerror ) ) { continue; }
+                    if ( kerror > j ) break;
+                    if ( ! iprev_dp_divmin_for_error.hasOwnProperty( j-kerror ) ) { continue; }
 
-                    //if ( this.dp_divmin_for_error[i-1][j-kerror] === this.infinity ) { continue; }
-                    //if ( this.divmin_for_error[i][kerror][0] === this.infinity ) { continue; }
-
-                    var divsum = this.divmin_for_error[i][kerror][0] + this.dp_divmin_for_error[i-1][j-kerror];
+                    var divsum = idivmin_for_error[kerror] + iprev_dp_divmin_for_error[j-kerror];
                     if ( j_divmin === this.infinity || divsum < j_divmin ) {
                         j_divmin = divsum;
                         j_traceback[0] = kerror;
@@ -634,7 +637,7 @@ function report_output_library_data( library, error_sequence, diversity_cap ) {
     output_library_data.positions = [];
     output_library_data.error = 0;
     for ( var i=0; i < library.n_positions; ++i ) {
-        var lexind = library.divmin_for_error[ i ][ error_sequence[ i ] ][ 1 ];
+        var lexind = library.codon_for_error[ i ][ error_sequence[ i ] ];
         library.dclex.set_from_index(lexind);
         dc.set_from_lex( library.dclex );
         var codon_data =  record_codon_data( i, dc, library );
