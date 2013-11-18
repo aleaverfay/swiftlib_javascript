@@ -123,7 +123,12 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
         var table_i = [];
         var error_trace = library.traceback_from_error_level( error_list[i] );
         var i_data = report_output_library_data( library, error_trace, diversity_cap );
-        var i_summary = ["<p> Result #<b>", (i+1).toString(), "</b>.  Error: <b>", error_list[i].toString(), "</b> Theoretical Diversity (DNA): <b>", i_data.dna_diversity.toExponential(3), "</b> Amino-acid diversity: <b>", i_data.aa_diversity.toExponential(3), "</b></p>" ];
+        var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td>" +
+                         "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td></tr><tr><td>",
+                         (i+1).toString(), "</td><td>",
+                         error_list[i].toString(), "</td><td>",
+                         i_data.dna_diversity.toExponential(3), "</td><td>",
+                         i_data.aa_diversity.toExponential(3), "</td></tr></table><br>" ];
         var table = [];
         if ( i === 0 ) {
             table.push( "<table id=scrollhere class=result_table>" );
@@ -313,7 +318,7 @@ function validate_inputs_and_launch( launch_button ) {
                 console.log( "Error list: ", error_list.join(",") );
             }
             var stoptime = new Date().getTime();
-            var output_html = "Running time took " + (( stoptime - starttime ) / 1000 )+ " seconds<br>" + output_tables_from_error_values( library, error_list, ub_float );
+            var output_html = "Running time: " + (( stoptime - starttime ) / 1000 )+ " seconds<br>" + output_tables_from_error_values( library, error_list, ub_float );
     
             $('#resultdiv').html( output_html );
     
