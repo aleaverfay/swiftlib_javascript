@@ -1,3 +1,59 @@
 body {
     font-size: 12px;
 }
+
+h1 {
+	font-family: 'Berkshire Swash', cursive;
+	font-size: 3em;
+	text-align: center;
+}
+
+h2 {
+	font-size: 2em;
+	text-align: center;
+}
+
+p {
+	padding-left: 20px;
+}
+
+table {
+	font-size: 0.9em;
+}
+
+label {
+	display: inline-block;
+	width: 200px;
+}
+
+.subheader {
+	font-size: 1em;
+	font-weight: bold;
+}
+
+.table_input {
+	display: inline-block;
+	vertical-align: top;
+}
+
+.instructions {
+	display: inline-block;
+	/*vertical-align: top;*/
+	width: 800px;
+}
+
+.result_table {
+    border: 1px solid black;
+    border-collapse:collapse;
+}
+.result_table td
+{
+  border: 1px solid black;
+  padding: 4px;
+}
+.rtheader {
+    background-color:#93B300;
+}
+.rteven {
+    background-color:#EAF2D3;
+}

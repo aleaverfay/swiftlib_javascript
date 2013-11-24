@@ -40,8 +40,6 @@ function validate_aacount_cell( cell ) {
     }
 }
 
-
-
 function validate_seqpos_cell( cell ) {
     if ($(cell).val() === "") {
         $(cell).css("background-color", "pink");

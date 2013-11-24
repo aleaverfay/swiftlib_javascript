@@ -7,6 +7,9 @@ $(document).ready(function () {
 		collapsible: true
 	});
 
+	//Add themable tooltips
+	$( document ).tooltip();
+
 	$( "button" ).button();
 
 	$('#add').click( add_column_to_aacounts );
