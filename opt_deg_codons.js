@@ -241,6 +241,19 @@ function DegenerateCodon()  {
         }
     };
 
+    dc.diversity = function () {
+        for ( var i=0; i < 3; ++i ) {
+            if ( this.count_pos[i] === 0 ) {
+                return this.infinity;
+            }
+        }
+        var div = 1;
+        for ( var i=0; i < 3; ++i ) {
+            div *= this.count_pos[i];
+        }
+        return div;
+    };
+
     dc.log_diversity = function () {
         for ( var i=0; i < 3; ++i ) {
             if ( this.count_pos[i] === 0 ) {
@@ -299,6 +312,7 @@ function AALibrary() {
     function init( library ) {
         library.infinity = -1.0;
         library.gcmapper = GeneticCodeMapper();
+        library.max_dcs_per_pos = 2;
     }
     init( library );
 
@@ -392,6 +406,107 @@ function AALibrary() {
         }
         return error;
     };
+
+    library.find_potentially_useful_codons = function() {
+        this.useful_codons = []
+        for ( var i=0; i < this.n_positions; ++i ) {
+            this.useful_codons[i] = []
+        }
+        var lex = LexicographicalIterator( [ 15, 15, 15 ] );
+    }
+
+    library.compute_smallest_diversity_for_all_errors_given_n_degenerate_codons = function() {
+        function inds_for_lexes( lexes, count ) {
+            var inds = []
+            for ( var i=0; i < count; ++i ) {
+                inds[i] = lexes[i].index();
+            }
+            return inds;
+        }
+
+        this.divmin_for_error_for_n_dcs = [];
+        this.codons_for_error_for_n_dcs = [];
+        for ( var i=0; i < this.n_positions; ++i ) {
+            this.divmin_for_error_for_n_dcs[i] = [];
+            this.codons_for_error_for_n_dcs[i] = [];
+            for ( var j=0; j < this.max_dcs_per_pos; ++j ) {
+                this.divmin_for_error_for_n_dcs[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
+                this.codons_for_error_for_n_dcs[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
+            }
+        }
+        var dims = [ 16, 16, 16 ];
+        var lexes = [];
+        var dcs = [];
+        for ( var i = 0; i < this.max_dcs_per_pos; ++i ) {
+            lexes[i] = LexicographicalIterator( dims );
+            dcs[i] = DegenerateCodon();
+        }
+        var aas_for_lex = [];
+        var aas_for_combo = newFilledArray( 21, false );
+        for ( var i = 1; i <= this.max_dcs_per_pos; ++i ) {
+            // i represents the number of lexes being used
+            lexes[0].reset();
+            for ( var j = 1; j < i; ++j ) {
+                lexes[j].set_from_index(j);
+            }
+
+            while ( ! lexes[0].at_end ) {
+
+                var all_good = true;
+                for ( var j = 0; j < i; ++j ) {
+                    if ( dcs[j].set_from_lex( lexes[j] ) ) {
+                        aas_for_lex[j] = this.aas_for_degenerate_codon( dcs[j] );
+                    } else {
+                        all_good = false;
+                        break;
+                    }
+                }
+
+                if ( all_good ) {
+                    // colapse the aas_for_lex arrays into a single array
+                    for ( var j = 0; j < 21; ++j ) {
+                        aas_for_combo[j] = false;
+                        for ( var k = 0; k < i; ++k ) {
+                            aas_for_combo[j] = aas_for_combo[j] || aas_for_lex[k][j];
+                        }
+                    }
+
+                    // now iterate across all positions and compute the error
+                    for ( var j = 0; j < this.n_positions; ++j ) {
+                        var error = this.error_given_aas_for_pos( j, aas_for_combo );
+                        if ( error === this.infinity ) continue;
+                        var divsum = 0;
+                        for ( var k = 0; k < i; ++k ) {
+                            var kdiversity = dcs[k].diversity();
+                            if ( kdiversity === dcs[k].infinity ) {
+                                console.log( "how did this happen? " + k + " " + lexes[ k ].join(",") );
+                            }
+                            divsum += kdiversity;
+                        }
+                        var log_diversity = Math.log( divsum );
+                        var prev_diversity = this.divmin_for_error_for_n_dcs[ j ][ i-1 ][ error ];
+                        if ( prev_diversity === this.infinity || prev_diversity > log_diversity ) {
+                            this.divmin_for_error_for_n_dcs[ j ][ i-1 ][ error ] = log_diversity;
+                            this.codons_for_error_for_n_dcs[ j ][ i-1 ][ error ] = inds_for_lexes( lexes, i );
+                        }
+                    }
+                }
+
+                // now increment the lexes
+                for ( var j = i-1; j >= 0; --j ) {
+                    var success = lexes[j].increment();
+                    if ( success ) {
+                        // now reset the index for each lex k, k>j
+                        var jlexind = lexes[j].index();
+                        for ( var k = j+1; k < i; ++k ) {
+                            lexes[k].set_from_index( jlexind + k );
+                        }
+                        break;
+                    }
+                } // increment lexes
+            } // while ( ! lex[0].at_end )
+        } // i < this.max_dcs_per_pos
+    }
 
     library.compute_smallest_diversity_for_all_errors = function () {
         this.divmin_for_error = [];
@@ -664,9 +779,27 @@ function go() {
     var csv_contents = document.getElementById( "aaobs" ).value;
     library.load_library( csv_contents );
     library.compute_smallest_diversity_for_all_errors();
-    var diversity_cap = 320000000;
-    var best = library.optimize_library( diversity_cap );
-    print_output_codons( library, best, diversity_cap );
+    var starttime = new Date().getTime();
+    library.compute_smallest_diversity_for_all_errors_given_n_degenerate_codons();
+    var stoptime = new Date().getTime();
+    console.log( "enumerating degenerate codon pairs took " + (( stoptime - starttime ) / 1000 )+ " seconds " );
+
+    var nbad = 0;
+    for ( var i = 0; i < library.n_positions; ++i ) {
+        for ( var j = 0; j < library.max_per_position_error; ++j ) {
+            if ( Math.abs( library.divmin_for_error_for_n_dcs[i][0][j] - library.divmin_for_error[i][j] ) > 1e-6 ) {
+                nbad += 1;
+                if ( nbad < 10 ) {
+                    console.log( "Bad #" + nbad + ", pos " + i + " error " + j + " " + library.divmin_for_error_for_n_dcs[i][0][j] + " != " + library.divmin_for_error[i][j] );
+                }
+            }
+        }
+    }
+    alert( "Nbad: " + nbad );
+
+    //var diversity_cap = 320000000;
+    //var best = library.optimize_library( diversity_cap );
+    //print_output_codons( library, best, diversity_cap );
 }
 
 // Local Variables:
