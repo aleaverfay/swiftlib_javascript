@@ -367,6 +367,7 @@ function AALibrary() {
         library.infinity = -1.0;
         library.gcmapper = GeneticCodeMapper();
         library.max_dcs_per_pos = 2;
+        library.max_extra_primers = 1;
     }
     init( library );
 
@@ -406,6 +407,8 @@ function AALibrary() {
 
     //format should be a table with N columns and 21 rows
     // row 1 is a header, which just gives the sequence positions
+    // row 2 defines primer boundaries
+    // row 3 gives the maximum number of DCs for each position
     // column 1 gives the amino acid names
     // row1/column1 gives nothing
     // all other row/column combinations should be integers
@@ -440,8 +443,12 @@ function AALibrary() {
 
         var row3 = lines[2];
         var row3cols = row3.split(",").slice(1);
+        var this.max_dcs_per_pos = 1;
         for ( var i=0; i < this.n_positions; ++i ) {
             this.max_dcs_for_pos[i] = parseInt( row3cols[i] );
+            if ( this.max_dcs_for_pos[i] > this.max_dcs_per_pos ) {
+                this.max_dcs_per_pos = this.max_dcs_for_pos[i];
+            }
         }
 
         this.max_per_position_error = 0;
@@ -804,7 +811,9 @@ function AALibrary() {
         this.dp_traceback_mdcs = [];
         for ( var i=0; i < this.n_positions; ++i ) {
             this.dp_divmin_for_error_mdcs[i] = [];
-            this.dp_traceback_mdcs = [];
+            this.dp_traceback_mdcs[i] = [];
+            for ( var j=0; j < this.
+        }
     };
 
     return library;
