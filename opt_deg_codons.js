@@ -166,12 +166,59 @@ function LexicographicalIterator( dims ) {
         return false
     };
 
+    lex.upper_diagonal_increment = function () {
+        for ( var i = lex.size - 1; i >= 0; --i ) {
+            lex.pos[ i ] += 1;
+            if ( lex.pos[ i ] === lex.dimsizes[ i ] ) {
+                lex.pos[ i ] = 0;
+            } else {
+                var beyond_end = false;
+                for ( var k = i+1; k < lex.size; ++k )  {
+                    lex.pos[ k ] = lex.pos[ i ] + k - i;
+                    if ( lex.pos[ k ] >= lex.dimsizes[ k ] ) {
+                        beyond_end = true;
+                        break;
+                    }
+                }
+                if ( beyond_end && i == 0 ) {
+                    for ( var k = 0; k < lex.size; ++k ) {
+                        lex.pos[ k ] = 0;
+                    }
+                    lex.at_end = true;
+                    return false;
+                } else if ( ! beyond_end ) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
     lex.reset = function() {
         for ( var i=0; i < this.size; ++i ) {
             this.pos[ i ] = 0;
         }
         this.at_end = false;
     };
+
+    // if you want to iterate across only the values of the lex s.t.
+    // pos[i] < pos[j] for all j > i, then initialize the lex with
+    // this function, and increment it with the increment_upper_diagonal
+    // function.
+    lex.upper_diagonal_reset = function() {
+        var beyond_end = false;
+        for ( var i=0; i < this.size; ++i ) {
+            this.pos[ i ] = i;
+            if ( i > this.dimsizes[ i ] ) { beyond_end = true; }
+        }
+        if ( beyond_end ) {
+            for ( var i=0; i < this.size; ++i ) { this.pos[i] = 0; }
+            this.at_end = true;
+        } else {
+            this.at_end = false;
+        }
+    }
 
     lex.index = function() {
         // return the integer index representing the state of the lex
@@ -466,8 +513,31 @@ function AALibrary() {
     };
 
     library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse = function() {
-        this.enumerate_aas_for_all_degenerate_codons();
         
+        this.enumerate_aas_for_all_degenerate_codons();
+        this.divmin_for_error_for_n_dcs_2 = [];
+        this.codons_for_error_for_n_dcs_2 = [];
+        for ( var i=0; i < this.n_positions; ++i ) {
+            this.divmin_for_error_for_n_dcs_2[i] = [];
+            this.codons_for_error_for_n_dcs_2[i] = [];
+            for ( var j=0; j < this.max_dcs_per_pos; ++j ) {
+                this.divmin_for_error_for_n_dcs_2[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
+                this.codons_for_error_for_n_dcs_2[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
+            }
+        }
+        var aas_for_combo = newFilledArray( 21, false );
+        for ( var i=0; i < this.n_positions; ++i ) {
+            for ( var j=1; j <= this.max_dcs_per_pos; ++j ) {
+                var dims = [];
+                for ( var k=0; k < j; ++k ) {
+                    dims[k] = this.useful_codons[i].length;
+                }
+                var jlex = LexicographicalIterator( dims );
+                while ( ! jlex.at_end ) {
+                    
+                }
+            }
+        }
     }
 
     library.compute_smallest_diversity_for_all_errors_given_n_degenerate_codons = function() {
@@ -797,6 +867,15 @@ function go() {
 //    dc.log_diversity();
 //
 //    return;
+
+    var dims = [7,7,7];
+    var lex = LexicographicalIterator( dims );
+    lex.upper_diagonal_reset();
+    while ( ! lex.at_end ) {
+        console.log( "lex: " + lex.pos.join(", " ) );
+        lex.upper_diagonal_increment();
+    }
+    return;
 
     var csv_contents = document.getElementById( "aaobs" ).value;
     library.load_library( csv_contents );
