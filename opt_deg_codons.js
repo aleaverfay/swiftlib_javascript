@@ -416,6 +416,8 @@ function AALibrary() {
         this.aa_counts = [];
         this.required = [];
         this.forbidden = [];
+        this.primer_reps = newFilledArray( this.n_positions, 0 );
+        this.max_dcs_for_pos = newFilledArray( this.n_positions, 1 );
         for ( var i=0; i < this.n_positions; ++i ) {
             this.aa_counts[ i ] = newFilledArray( 21, 0 );
             this.required[ i ]  = newFilledArray( 21, false );
@@ -426,10 +428,26 @@ function AALibrary() {
             this.orig_pos[i-1] = strip_whitespace( row1[i] )
         }
 
+        var row2 = lines[1];
+        var row2cols = row2.split(",").slice(1);
+        var last_rep = 0;
+        for ( var i=0; i < this.n_positions; ++i ) {
+            if ( row2cols[i] === "|" ) {
+                last_rep = i;
+            }
+            this.primer_reps[i] = last_rep;
+        }
+
+        var row3 = lines[2];
+        var row3cols = row3.split(",").slice(1);
+        for ( var i=0; i < this.n_positions; ++i ) {
+            this.max_dcs_for_pos[i] = parseInt( row3cols[i] );
+        }
+
         this.max_per_position_error = 0;
         var obs_count = newFilledArray( this.n_positions, 0 );
         for ( var i=0; i < 21; ++i ) {
-            var line = lines[ i + 1 ];
+            var line = lines[ i + 3 ];
             var vals = line.split(",").slice(1);
             var iiobs = 0;
             for ( var j=0; j < vals.length; ++j ) {
@@ -563,27 +581,22 @@ function AALibrary() {
         for ( var i=0; i < this.n_positions; ++i ) {
             this.divmin_for_error_for_n_dcs_sparse[i] = [];
             this.codons_for_error_for_n_dcs_sparse[i] = [];
-            for ( var j=0; j < this.max_dcs_per_pos; ++j ) {
+            for ( var j=0; j < this.max_dcs_for_pos[i]; ++j ) {
                 this.divmin_for_error_for_n_dcs_sparse[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
                 this.codons_for_error_for_n_dcs_sparse[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
             }
         }
         var aas_for_combo = newFilledArray( 21, false );
         for ( var i=0; i < this.n_positions; ++i ) {
-            for ( var j=1; j <= this.max_dcs_per_pos; ++j ) {
+            for ( var j=1; j <= this.max_dcs_for_pos[i]; ++j ) {
                 var dims = [];
-                if ( i === 0 && j == 2 ) {
-                    console.log( "ok!" );
-                }
+
                 for ( var k=0; k < j; ++k ) {
                     dims[k] = this.useful_codons[i].length;
                 }
                 var jlex = LexicographicalIterator( dims );
                 jlex.upper_diagonal_reset();
                 while ( ! jlex.at_end ) {
-                    if ( i === 0 && j === 2 && jlex.pos[0] === 22 && jlex.pos[1] == 268 ) {
-                        console.log( "ok!" );
-                    }
 
                     // assemble the codons; compute their diversity
                     for ( var k=0; k < 21; ++k ) aas_for_combo[k] = false;
@@ -627,7 +640,7 @@ function AALibrary() {
         for ( var i=0; i < this.n_positions; ++i ) {
             this.divmin_for_error_for_n_dcs[i] = [];
             this.codons_for_error_for_n_dcs[i] = [];
-            for ( var j=0; j < this.max_dcs_per_pos; ++j ) {
+            for ( var j=0; j < this.max_dcs_for_pos[i]; ++j ) {
                 this.divmin_for_error_for_n_dcs[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
                 this.codons_for_error_for_n_dcs[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
             }
@@ -847,6 +860,16 @@ function AALibrary() {
 
         return error_traceback;
     };
+
+    library.optimize_library_multiple_dcs = function() {
+        this.error_span = this.max_per_position_error * this.n_positions;
+        this.dp_divmin_for_error_mdcs = [];
+        this.dp_traceback_mdcs = [];
+        for ( var i=0; i < this.n_positions; ++i ) {
+            this.dp_divmin_for_error_mdcs[i] = [];
+            this.dp_traceback_mdcs = [];
+    };
+
     return library;
 }
 
