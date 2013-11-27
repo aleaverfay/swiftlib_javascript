@@ -625,69 +625,6 @@ function AALibrary() {
         }
     }
 
-    library.compute_smallest_diversity_for_all_errors_given_n_degenerate_codons = function() {
-        this.enumerate_aas_for_all_degenerate_codons();
-        function inds_from_dc_combo_lex( dc_combo_lex  ) {
-            var inds = [];
-            for ( var i=0; i < dc_combo_lex.pos.length; ++i ) {
-                inds[i] = dc_combo_lex.pos[i];
-            }
-            return inds;
-        }
-
-        this.divmin_for_error_for_n_dcs = [];
-        this.codons_for_error_for_n_dcs = [];
-        for ( var i=0; i < this.n_positions; ++i ) {
-            this.divmin_for_error_for_n_dcs[i] = [];
-            this.codons_for_error_for_n_dcs[i] = [];
-            for ( var j=0; j < this.max_dcs_for_pos[i]; ++j ) {
-                this.divmin_for_error_for_n_dcs[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
-                this.codons_for_error_for_n_dcs[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
-            }
-        }
-        var aas_for_combo = newFilledArray( 21, false );
-        for ( var i = 1; i <= this.max_dcs_per_pos; ++i ) {
-            // i represents the number of lexes being used
-            var dims = [];
-            for ( var j = 0; j < i; ++j ) {
-                dims[j] = 3375;
-            }
-            var dc_combo_lex = LexicographicalIterator( dims );
-            dc_combo_lex.upper_diagonal_reset();
-            while ( ! dc_combo_lex.at_end ) {
-
-                // or together the this.aas_for_dc arrays into a single array
-                for ( var j = 0; j < 21; ++j ) {
-                    aas_for_combo[j] = false;
-                    for ( var k = 0; k < i; ++k ) {
-                        aas_for_combo[j] = aas_for_combo[j] || this.aas_for_dc[ dc_combo_lex.pos[k] ][j];
-                    }
-                }
-
-                // compute the diversity for this combination of degenerate codons
-                var divsum = 0;
-                for ( var k = 0; k < i; ++k ) {
-                    var kdiversity = this.diversities_for_dc[ dc_combo_lex.pos[k] ];
-                    divsum += kdiversity;
-                }
-                var log_diversity = Math.log( divsum );
-
-                // now iterate across all positions and compute the error
-                for ( var j = 0; j < this.n_positions; ++j ) {
-                    var error = this.error_given_aas_for_pos( j, aas_for_combo );
-                    if ( error === this.infinity ) continue;
-                    var prev_diversity = this.divmin_for_error_for_n_dcs[ j ][ i-1 ][ error ];
-                    if ( prev_diversity === this.infinity || prev_diversity > log_diversity ) {
-                        this.divmin_for_error_for_n_dcs[ j ][ i-1 ][ error ] = log_diversity;
-                        this.codons_for_error_for_n_dcs[ j ][ i-1 ][ error ] = inds_from_dc_combo_lex( dc_combo_lex );
-                    }
-                }
-
-                // now increment the lexes
-                dc_combo_lex.upper_diagonal_increment();
-            } // while ( ! dc_combo_lex.at_end )
-        } // i < this.max_dcs_per_pos
-    }
 
     library.compute_smallest_diversity_for_all_errors = function () {
         this.divmin_for_error = [];
