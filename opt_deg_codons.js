@@ -367,7 +367,7 @@ function AALibrary() {
         library.infinity = -1.0;
         library.gcmapper = GeneticCodeMapper();
         library.max_dcs_per_pos = 2;
-        library.max_extra_primers = 1;
+        library.max_extra_primers = 2;
     }
     init( library );
 
@@ -821,11 +821,11 @@ function AALibrary() {
             }
         }
         // take care of position 0: copy this.divmin_for_error_for_n_dcs_sparse[0] into this.dp_divmin_for_error_mdcs
-        for ( var i=0; i < this.max_dcs_for_pos[0]; ++i ) {
+        for ( var i=0; i < Math.min( this.max_extra_primers+1, this.max_dcs_for_pos[0] ); ++i ) {
             for ( var j=0; j <= this.max_per_position_error; ++j ) {
                 if ( this.divmin_for_error_for_n_dcs_sparse[0][i][j] !== this.infinity ) {
                     this.dp_divmin_for_error_mdcs[0][i][j] = this.divmin_for_error_for_n_dcs_sparse[0][i][j];
-                    this.dp_last_mdc_primer_rep[0][i][j]    = this.primer_reps[0];
+                    this.dp_last_mdc_primer_rep[0][i][j]   = this.primer_reps[0];
                     this.dp_traceback_mdcs[0][i][j]        = [ i, j, 0 ];
                 }
             }
@@ -880,33 +880,82 @@ function AALibrary() {
         } // end  ii loop -- position from 
     };
 
-    
+    library.traceback_mdcs = function( diversity_cap ) {
+        var best = this.find_minimal_error_beneath_diversity_cap_mdcs( diversity_cap );
+        return this.traceback_mdcs_from_nextra_and_error( best[0], best[1] );
+    };
+
+    library.find_minimal_error_beneath_diversity_cap_mdcs = function ( diversity_cap ) {
+        var best_error = this.infinity;
+        var best_nextra = this.infinity;
+        for ( var ii=0; ii <= this.max_extra_primers; ++ii ) {
+            var ii_dp_divmin = this.dp_divmin_for_error_mdcs[ this.n_positions-1 ][ ii ];
+            for ( var jj=0; jj <= this.error_span; ++jj ) {
+                if ( ! ii_dp_divmin.hasOwnProperty( jj ) ) continue;
+                var jjdiversity = ii_dp_divmin[jj];
+                if ( jjdiversity > diversity_cap ) continue;
+                if ( best_error === this.infinity || jj < best_error ) {
+                    best_error = jj;
+                    best_nextra = ii;
+                }
+            }
+        }
+        console.log( "Smallest error of " + best_error + " requires " + best_nextra + " extra degenerate codons" );
+        return [ best_nextra, best_error ];
+    };
+
+    library.traceback_mdcs_from_nextra_and_error = function( nextra, error_level ) {
+        var error_traceback = [];
+        for ( var i=0; i < this.n_positions; ++i ) { error_traceback[i] = [ this.infinity, this.infinity ]; }
+
+        var position_error = [];
+        for ( var i=0; i < this.n_positions; ++i ) { position_error[i] = 0; }
+        for ( var i=this.n_positions-1; i >= 0; --i ) {
+            var tb = this.dp_traceback_mdcs[ i ][ nextra ][ error_level ];
+            error_traceback[i][ 0 ] = tb[ 0 ];
+            error_traceback[i][ 1 ] = tb[ 1 ];
+            nextra      = nextra - tb[ 0 ];
+            error_level = error_level - tb[ 1 ];
+            position_error[i] = tb[1];
+        }
+        for ( var i=0; i < this.n_positions; ++i ) {
+            console.log( "Position " + i + " with error level " + error_traceback[i][1] + " contributing " + error_traceback[i][0] + " degenerate codons " );
+        }
+        return error_traceback;
+    };
 
     return library;
 }
 
-function record_codon_data( position, degenerate_codon, library ) {
+function record_codon_data( position, codon_inds, library ) {
     // three things we need:
     // 1: the codon
     // 2: the amino acids that are represented
     // 2b: the counts from the original set of observations for each of the represented aas
     // 3: the amino acids and their counts in the original set of observations that are not represented
-    codon_data = {}
 
-    var aas_present  = library.aas_for_degenerate_codon( degenerate_codon );
+    var codon_data = {}
+
+    var dc = DegenerateCodon();
+    var aas_present  = newFilledArray( 21, false ); //library.aas_for_degenerate_codon( degenerate_codon );
     var orig_obs = library.aa_counts[ position ];
+    var codon_diversity = 0;
 
     codon_data.orig_pos_string = library.orig_pos[ position ];
 
-    codon_data.codon_string = "";
-    for ( var i=0; i < 3; ++i ) {
-        var idcpos = degenerate_codon.pos[i];
-        var base_tuple = []
-        for ( var j=0; j < 4; ++j ) {
-            base_tuple[j] = binBoolString( idcpos[j] );
+    var codons = [];
+    for ( var ii=0; ii < codon_inds.length; ++ii ) {
+        library.dclex.set_from_index( codon_inds[ii] );
+        dc.set_from_lex( library.dclex );
+        codon_diversity += dc.diversity();
+        codons.push( dc.codon_string() );
+        var iiaas = library.aas_for_dc[ codon_inds[ii] ];
+        for ( var jj=0; jj < 21; ++jj ) {
+            aas_present[jj] = aas_present[jj] || iiaas[jj];
         }
-        codon_data.codon_string += degenerate_codon.degenerate_base_names[ base_tuple.join("") ];
     }
+    codons.sort();
+    codon_data.codon_string = codons.join( ", " );
 
     codon_data.present_string = "";
     codon_data.error = 0;
@@ -934,29 +983,29 @@ function record_codon_data( position, degenerate_codon, library ) {
         }
     }
 
-    codon_data.log_dna_diversity = degenerate_codon.log_diversity();
+    codon_data.dna_diversity = codon_diversity;
+    codon_data.log_dna_diversity = Math.log( codon_diversity );
     codon_data.aa_count = aa_count;
     codon_data.log_aa_diversity = Math.log( aa_count );
 
     return codon_data;
 }    
 
-function report_output_library_data( library, error_sequence, diversity_cap ) {
-    var dc = DegenerateCodon();
+function report_output_library_data( library, error_sequence ) {
     var dna_diversity_sum = 0;
     var aa_diversity_sum = 0;
     var output_library_data = {};
     output_library_data.positions = [];
     output_library_data.error = 0;
-    for ( var i=0; i < library.n_positions; ++i ) {
-        var lexind = library.codon_for_error[ i ][ error_sequence[ i ] ];
-        library.dclex.set_from_index(lexind);
-        dc.set_from_lex( library.dclex );
-        var codon_data =  record_codon_data( i, dc, library );
+    for ( var ii=0; ii < library.n_positions; ++ii ) {
+        var ii_n_extra_dcs = error_sequence[ ii ][ 0 ];
+        var ii_error       = error_sequence[ ii ][ 1 ];
+        var ii_dc_list = library.codons_for_error_for_n_dcs_sparse[ ii ][ ii_n_extra_dcs ][ ii_error ];
+        var codon_data =  record_codon_data( ii, ii_dc_list, library );
         dna_diversity_sum += codon_data.log_dna_diversity;
         aa_diversity_sum +=  codon_data.log_aa_diversity;
         output_library_data.positions.push( codon_data );
-        output_library_data.error += output_library_data.positions[ i ].error;
+        output_library_data.error += output_library_data.positions[ ii ].error;
     }
     output_library_data.dna_diversity = Math.exp( dna_diversity_sum );
     output_library_data.aa_diversity = Math.exp( aa_diversity_sum );
@@ -1006,6 +1055,14 @@ function go() {
     library.optimize_library_multiple_dcs();
     var stoptime = new Date().getTime();
     console.log( "running DP considering multiple degenerate codons took " + (( stoptime - starttime ) / 1000 )+ " seconds " );
+
+    var error_traceback = library.traceback_mdcs( Math.log( 3.2e8 ) );
+
+    var old = report_output_library_data( library, error_traceback );
+    for ( var ii = 0; ii < library.n_positions; ++ii ) {
+        var iipos = old.positions[ ii ];
+        console.log( "Pos: " + iipos.orig_pos_string + " codons: " + iipos.codon_string + " AAs: " + iipos.present_string + " Absent: " + iipos.absent_string );
+    }
 
 
     //console.log( "enumerating degenerate codon pairs" );
