@@ -1,16 +1,25 @@
 <html>
 <head>
 
-<script src="js/lib/jquery-1.10.2.min.js"></script>
-<script src="js/lib/jquery-ui-1.10.3.custom.min.js"></script>
-<script src="js/lib/jquery.scrollIntoView.js"></script>
-<script src="js/app/main.js"></script>
-<script src="js/app/opt_deg_codons.js"></script>
-<script src="js/app/table_input.js"></script>
+<!--
+<link rel="stylesheet" type="text/css" href="http://akottr.github.io/css/reset.css" />
+<link rel="stylesheet" type="text/css" href="http://akottr.github.io/css/akottr.css" />
+-->
 
 <link rel="stylesheet" href="css/themes/smoothness/jquery-ui-1.10.3.custom.min.css">
 <link rel="stylesheet" href="css/style.css">
 <link href='http://fonts.googleapis.com/css?family=Berkshire+Swash' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" type="text/css" href="css/dragtable.css" />
+
+<script src="js/lib/jquery-1.10.2.min.js"></script>
+<script src="js/lib/jquery-ui-1.10.3.custom.min.js"></script>
+<script src="js/lib/jquery.scrollIntoView.js"></script>
+<script src="js/lib/jquery.dragtable.js"></script>
+<script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/jquery.validate.js"></script>
+
+<script src="js/app/table_input.js"></script>
+<script src="js/app/opt_deg_codons.js"></script>
+<script src="js/app/main.js"></script>
 
 </head>
 <body>
@@ -59,7 +68,7 @@
 		the smallest diversity given that it produces a given error.  The smallest
 		library for positions [1..<i>i</i>] given a particular error can be readily
 		computed using a simple recurrence.  The best library is the one with the smallest
-		error with a diversity below the desired cap.  The running time is <i>O(n**2 m**2)</i> for
+		error with a diversity below the desired cap.  The running time is <i>O(n<sup>2</sup>m<sup>2</sup>)</i> for
 		<i>n</i> positions and <i>m</i> error gradations.  In the case above, n=15, and
 		m=100 (the maximum error would be 100 given by a codon that doesn't contain any
 		of the desired amino acids; the larger the maximum error the longer the running time).
@@ -109,190 +118,203 @@
 		<li><a href="#csv_tab">CSV input</a></li>
 		<li><a href="#fasta_tab">FASTA input</a></li>
 	</ul>
-	<div id=manual_tab>
-		<div id=table_aacounts class=table_input>
-			<table class=mytable id=aacounts>
-				<tr class=firstrow>
-			        <td>Resdiue Number:</td>
-			        <td>
-			            <input class=seqposcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>A (Alanine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>C (Cysteine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>D (Apsartic Acid)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>E (Glutamic Acid)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>F (Phenylalanine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>G (Glycine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>H (Histidine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>I (Isoleucine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>K (Lysine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>L (Leucine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>M (Methionine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>N (Asparagine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>P (Proline)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>Q (Glutamine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>R (Arginine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>S (Serine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>T (Threonine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>V (Valine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>W (Tryptophan)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>Y (Tyrosine)</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			    <tr>
-			        <td>STOP</td>
-			        <td>
-			            <input class=aacountcell type="text" name="test" size=4>
-			        </td>
-			    </tr>
-			</table>
-			<button id="add">Add Position</button>
-			<button id="delcol">Delete Position</button>
-		</div>
-		<div class=instructions>
-			<span class=subheader>Manual input instructions</span>
-			<ul>
-				<li> Each column in the table below represents one position, and each cell in the column (except for the first) represents one amino acid at that position.
-				<li> The "Add Column" button will add a new column to the right.
-				<li> The "Delete Column" button will delete the right-most column.  All data in the column will be lost when you hit this button, so be careful.
-				<li> You must provide a label for each column in the "Res" row.  This is for output purposes and any label will do (e.g. 208).
-				<li> Positive integers should be given in the table for amino acids that you want to appear.
-				<li> Negative integers can be given for amino acids you want to penalize (but not forbid).
-				<li> A star (*) can be given for amino acids that you want to require.
-				<li> An explanation point (!) can be given for amino acids that you want to forbid.
-				<li> Empty cells will be treated as if they contain a "0" (except for the "Res" row).
-				<li> Any ill-formatted cell on this page will be highlighted in pink.
-				<li> An upper bound on the library size must be given.  This can be given in scientific notation (e.g. 1e7).
-				<li> STOP values should be negative (positive values would favor stop codons at the given position).
-			</ul>
-			<span class=subheader>Saving Data</span>
-				<p>
-				To save the data you have entered in the table below for future sessions, switch to the Text view using
-				the radio button.  This will display your data in a "comma separated value" (CSV) format.  Copy your data
-				out of the text box that appears and put it in a document for later use.  You may load data into the table
-				by pasting the data from a previously-saved table and clicking on the "Update Table" button (which is
-				only visible in the Text view).  If you get an error message saying that it found 42 columns instead of
-				21, make sure you clear out the text window before you paste your data in it.
-				</p>
-		</div>
-		<br/><br/>
-		<div id=global_settings>
-			<div>
-				<label for=libsize_upper>Library size upper limit*:</label>
-				<input id=libsize_upper title="Required field. The maximum allowable DNA diversity for the generated degenerate codons" type=text size=8 >
+	<div id=manual_tab class=hscroll>
+		<!--<form id="mainForm" method="get" action="">-->
+			<div id=table_aacounts class=table_input>
+				<table class=mytable id=aacounts>
+					<thead>
+						<tr class=firstrow>
+							<th></th>
+							<th>Delete Row</th>
+						</tr>
+						<tr class=firstrow>
+							<th></th>
+							<th class="accept">Drag Row</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr class=firstrow>
+							<td data-header="resnum">Residue Number:</td>
+							<td data-header="seqpos1"><input class=seqposcell type="text" name="test" size=4></td>
+				   	</tr>
+				 	   <tr>
+				 	       <td>A (Alanine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>C (Cysteine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>D (Apsartic Acid)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>E (Glutamic Acid)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>F (Phenylalanine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>G (Glycine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>H (Histidine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>I (Isoleucine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>K (Lysine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>L (Leucine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>M (Methionine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>N (Asparagine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>P (Proline)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>Q (Glutamine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>R (Arginine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>S (Serine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>T (Threonine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>V (Valine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>W (Tryptophan)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>Y (Tyrosine)</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+				 	   <tr>
+				 	       <td>STOP</td>
+				 	       <td>
+				 	           <input class=aacountcell type="text" name="test" size=4>
+				 	       </td>
+				 	   </tr>
+					</tbody>
+				</table>
 			</div>
+			<div class=instructions>
+				<span class=subheader>Manual input instructions</span>
+				<ul>
+					<li> Each column in the table below represents one position, and each cell in the column (except for the first) represents one amino acid at that position.
+					<li> The "Add Column" button will add a new column to the right.
+					<li> The "Delete Column" button will delete the right-most column.  All data in the column will be lost when you hit this button, so be careful.
+					<li> You must provide a label for each column in the "Res" row.  This is for output purposes and any label will do (e.g. 208).
+					<li> Positive integers should be given in the table for amino acids that you want to appear.
+					<li> Negative integers can be given for amino acids you want to penalize (but not forbid).
+					<li> A star (*) can be given for amino acids that you want to require.
+					<li> An explanation point (!) can be given for amino acids that you want to forbid.
+					<li> Empty cells will be treated as if they contain a "0" (except for the "Res" row).
+					<li> Any ill-formatted cell on this page will be highlighted in pink.
+					<li> An upper bound on the library size must be given.  This can be given in scientific notation (e.g. 1e7).
+					<li> STOP values should be negative (positive values would favor stop codons at the given position).
+				</ul>
+				<span class=subheader>Saving Data</span>
+					<p>
+					To save the data you have entered in the table below for future sessions, switch to the Text view using
+					the radio button.  This will display your data in a "comma separated value" (CSV) format.  Copy your data
+					out of the text box that appears and put it in a document for later use.  You may load data into the table
+					by pasting the data from a previously-saved table and clicking on the "Update Table" button (which is
+					only visible in the Text view).  If you get an error message saying that it found 42 columns instead of
+					21, make sure you clear out the text window before you paste your data in it.
+					</p>
+			</div>
+			<div id=global_settings>
+				<button id="add">Add Position</button>
+				<button id="delcol">Delete Position</button>
+				<button id="shiftright">Shift Right</button>
+				<br/><br/>
+				<div>
+					<label for=libsize_upper>*Library size upper limit:</label>
+					<input id=libsize_upper title="Required field. The maximum allowable DNA diversity for the generated degenerate codons" type=text size=8 >
+				</div>
 
-			<div>
-				<label for=libsize_lower>Library size lower limit:</label>
-				<input id=libsize_lower title="Optional field. The lower bound on the DNA diversity of the generated codons. If provided, multiple solutions within diversity range will be provided" type=text size=8>
-			</div>
+				<div>
+					<label for=libsize_lower>Library size lower limit:</label>
+					<input id=libsize_lower title="Optional field. The lower bound on the DNA diversity of the generated codons. If provided, multiple solutions within diversity range will be provided" type=text size=8>
+				</div>
 
-			<div>
-				<label for=stop_codon_penalty>Universal stop codon penalty:</label>
-				<input id=stop_codon_penalty title="Optional field. Stop codon penalty applied at all positions; overrides penalties given in the table" type=text size=8>
+				<div>
+					<label for=stop_codon_penalty>Universal stop codon penalty:</label>
+					<input id=stop_codon_penalty title="Optional field. Stop codon penalty applied at all positions; overrides penalties given in the table" type=text size=8>
+				</div>
+				<br>
+				<button id="launchbutton">Generate library!</button>
 			</div>
-			<br>
-			<button id="launchbutton">Generate library!</button>
-		</div>
+			<!--</form>-->
 	</div>
 
 	<div id=csv_tab>
