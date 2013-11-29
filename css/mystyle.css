@@ -1,19 +1,23 @@
-* {
+/** {
   margin-left: 20px;
   padding: 0px;
-}
+}*/
 body {
  font-size: 14px;
 }
 
 p {
-  width:600px;
+	/*width:600px;*/
 }
 li {
-   width:500px;
+	/* width:500px;*/
 }
 h1 {
     text-transform:none;
+}
+
+.bordered-content {
+	border: 2px solid;
 }
 
 .aacountcell {
@@ -33,13 +37,13 @@ h1 {
     border-color:#bbb #888 #666 #aaa;
     border-width:2px 2px 2px 2px;
     width:4em;
-    //height:2em;
+    /*height:2em;*/
     background:#ccc;
     color:#333;
     line-height:1;
     text-align:center;
-    //text-decoration:none;
-    //font-weight:50;
+    /*text-decoration:none;*/
+    /*font-weight:50;*/
 }
 
 .result_table {

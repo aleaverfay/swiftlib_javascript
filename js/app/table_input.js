@@ -13,11 +13,18 @@ function aacountcell_valid(cell_val) {
 }
 
 function add_column_to_aacounts() {
-    var rows = $('#aacounts').find('tr');
-    $(rows[0]).append('<td><input type="text" name="test" class=seqposcell size=4></td>');
-    for (var i = 1; i < rows.length; ++i) {
-        $(rows[i]).append('<td><input type="text" name="test" class=aacountcell size=4 ></td>');
-    }
+	var header_row = $('#aacounts').find('thead tr');
+	$(header_row).append('<th class="accept">Drag Me</th>');
+
+	var rows = $('#aacounts').find('tbody tr');
+	$(rows[0]).append('<td><input type="text" name="test" class=seqposcell size=4></td>');
+	for (var i = 1; i < rows.length; ++i) {
+		$(rows[i]).append('<td><input type="text" name="test" class=aacountcell size=4 ></td>');
+	}
+
+	$( '#aacounts' ).dragtable('destroy').dragtable({
+		dragaccept:'.accept'
+	});
 }
 
 function delete_column_from_aacounts() {
@@ -39,8 +46,6 @@ function validate_aacount_cell( cell ) {
         return true;
     }
 }
-
-
 
 function validate_seqpos_cell( cell ) {
     if ($(cell).val() === "") {
@@ -162,7 +167,7 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
 
 function create_csv_from_table() {
     var table_contents = [];
-    var trs = $('#aacounts').find('tr');
+    var trs = $('#aacounts tbody').find('tr');
     for ( var i = 0; i < trs.length; ++i ) {
         var row_i = [];
         var tds = $(trs[i]).find('td');
@@ -210,7 +215,7 @@ function populate_table_from_csv() {
     }
 
     // resize the table
-    var trs = $('#aacounts').find('tr');
+    var trs = $('#aacounts tbody').find('tr');
     var ncolumns_curr = $(trs[0]).find('td').length - 1;
     if ( ncolumns_curr < ncols_row0 ) {
         for ( var i=ncolumns_curr; i < ncols_row0; ++i ) {
@@ -234,22 +239,16 @@ function populate_table_from_csv() {
 }
 
 function handle_tab_vs_csv_change( rad_button ) {
-    //var rad_button = $("input[name='tab_vs_csv']")
-    //alert( "made it!" + $(rad_button).val() );
-    if ( $(rad_button).val() == 'csv' ) {
-        var new_csv = create_csv_from_table();
-        $('#csvaacounts').val( new_csv );
-        $('#text_aacounts').show();
-        $('#update_result').hide();
-        $('#table_aacounts').hide();
-    } else {
-        $('#table_aacounts').show();
-        $('#text_aacounts').hide();
-    }
+    var new_csv = create_csv_from_table();
+    $('#csvaacounts').val( new_csv );
 }
 
 
 function validate_inputs_and_launch( launch_button ) {
+
+    //disable inputs while working	
+    //$(launch_button).attr("disabled", true);
+
     var trs = $('#aacounts').find('tr');
     var any_errors = false;
     for (var i = 0; i < trs.length; ++i) {
@@ -301,8 +300,6 @@ function validate_inputs_and_launch( launch_button ) {
         return;
     }
 
-    $(launch_button).html("Working");
-
     // do the actual computation after we've updated the DOM.
     setTimeout( function () {
         var starttime = new Date().getTime();
@@ -325,21 +322,11 @@ function validate_inputs_and_launch( launch_button ) {
         } else {
             $('#resultdiv').html( "<p id=scrollhere > No solution exists for the given set of required (*) and forbidden (!) amino acids </p>" );
         }
-        $(launch_button).text("Go!");
+        //$(launch_button).attr("disabled", false);
         $('#scrollhere').scrollIntoView();
     }, 1 );
         
 }
-
-$(document).ready(function () {
-        $('#add').click( add_column_to_aacounts );
-        $('#delcol').click( delete_column_from_aacounts );
-        $('.aacountcell').blur( function() {validate_aacount_cell(this);} );
-        $('.seqposcell').blur( function() { validate_seqpos_cell(this);} );
-        $('#launchbutton').click( function() { validate_inputs_and_launch(this); } );
-        $("#tab_vs_csv_radio input:radio").click( function() { handle_tab_vs_csv_change(this); } );
-        $("#table_from_csv").click( populate_table_from_csv );
-})
 
 // Local Variables:
 // js-indent-level: 4
