@@ -43,7 +43,7 @@ function libsize_lower_valid( libsize_upper, cell_val ) {
 }
 
 function max_extra_primers_valid( cell_val ) {
-    if ( cell_val === "" ) return $('#primerboundary_row').is(':visible');
+    if ( cell_val === "" ) return !($('#primerboundary_row').is(':visible'));
     return val_is_integer( cell_val );
 }
 
@@ -54,9 +54,9 @@ function enable_or_disable_mdcs( allow_mdcs ) {
     $(('#max_extra_dcs_input')).toggle();
     
     if ( $(allow_mdcs).text() === "Allow Mult. Deg. Codons" ) {
-        $(allow_mdcs).text( "Disable Mult. Deg. Codons" );
+        $(allow_mdcs).button( "option", "label", "Disable Mult. Deg. Codons" );
     } else {
-        $(allow_mdcs).text( "Allow Mult. Deg. Codons" );
+        $(allow_mdcs).button( "option", "label", "Allow Mult. Deg. Codons" );
     }
 }
 
@@ -335,7 +335,8 @@ function handle_tab_vs_csv_change( rad_button ) {
 function validate_inputs_and_launch( launch_button ) {
 
     //disable inputs while working
-    //$(launch_button).attr("disabled", true);
+    $(launch_button).button("option","disabled", true);
+    $(launch_button).button( "option", "label", "Working..." );
 
     var trs = $('#aacounts tbody').find('tr');
     var any_errors = false;
@@ -346,11 +347,11 @@ function validate_inputs_and_launch( launch_button ) {
             if (i === 0) {
                 if ( ! validate_cell( ij_input, seqpos_cell_valid     ) ) any_errors = true;
             } else if ( i === 1 ) {
-                if ( ! validate_cell( ij_input, primer_boundary_valid  ) ) any_errors = true;
+                //if ( ! validate_cell( ij_input, primer_boundary_valid  ) ) any_errors = true;
             } else if ( i === 2 ) {
-                if ( ! validate_cell( ij_input, max_dcs_per_pos_valid ) ) any_errors = true;
+                //if ( ! validate_cell( ij_input, max_dcs_per_pos_valid ) ) any_errors = true;
             } else {
-                if ( ! validate_cell( ij_input, aacountcell_valid     ) ) any_errors = true;
+                //if ( ! validate_cell( ij_input, aacountcell_valid     ) ) any_errors = true;
             }
         }
     }
@@ -365,7 +366,9 @@ function validate_inputs_and_launch( launch_button ) {
     var libsize_upper_is_valid = validate_cell( libsize_upper, libsize_upper_valid );
     var libsize_upper_val;
     var libsize_lower_val;
-    if ( ! libsize_upper_is_valid ) { any_errors = true; }
+    if ( ! libsize_upper_is_valid ) {
+        any_errors = true;
+    }
     else {
         libsize_upper_val = parseFloat( $(libsize_upper).val() );
         var lisize_lower_is_valid = validate_cell( libsize_lower, function( the_arg ) { return libsize_lower_valid( libsize_upper_val, the_arg ); } );
@@ -377,7 +380,9 @@ function validate_inputs_and_launch( launch_button ) {
     }
 
     var max_extra_primers = $('#max_extra_primers');
-    if ( ! validate_cell( max_extra_primers, max_extra_primers_valid ) ) any_errors = true;
+    if ( ! validate_cell( max_extra_primers, max_extra_primers_valid ) ){
+        any_errors = true;
+    }
 
     if ( any_errors ) {
         alert( "Errors in inputs" );
@@ -418,7 +423,8 @@ function validate_inputs_and_launch( launch_button ) {
         } else {
             $('#resultdiv').html( "<p id=scrollhere > No solution exists for the given set of required (*) and forbidden (!) amino acids </p>" );
         }
-        //$(launch_button).attr("disabled", false);
+        $(launch_button).button("option","disabled", false);
+        $(launch_button).button( "option", "label", "Generate Library" );
         $('#scrollhere').scrollIntoView();
     }, 1 );
 
