@@ -35,9 +35,10 @@ $(document).ready(function () {
 	$('#allow_mult_dcs').click( function() { enable_or_disable_mdcs( this ); } );
 	$('#add').click( add_column_to_aacounts );
 	$('#delcol').click( delete_column_from_aacounts );
-	$('.aacountcell').blur( function() {validate_aacount_cell(this);} );
-	$('.seqposcell').blur( function() { validate_seqpos_cell(this);} );
 	$('#launchbutton').click( function() { validate_inputs_and_launch(this); } );
 	$("#table_from_csv").click( populate_table_from_csv );
+
+	$('#libsize_upper').blur( function() { validate_cell( this, libsize_upper_valid ); } );
+	update_table_validation_rules();
 });
 

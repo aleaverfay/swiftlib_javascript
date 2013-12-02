@@ -67,3 +67,12 @@ label {
 .rteven {
     background-color:#EAF2D3;
 }
+
+tr.firstrow td {
+    border-top: thin solid black;
+    border-bottom: thin solid black;
+}
+
+#maxdcs_row td {
+    border-bottom: thin solid black;
+}

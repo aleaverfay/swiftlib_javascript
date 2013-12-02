@@ -75,6 +75,8 @@ function add_column_to_aacounts() {
     $( '#aacounts' ).dragtable('destroy').dragtable({
         dragaccept:'.accept'
     });
+
+    update_table_validation_rules();
 }
 
 function delete_column_from_aacounts() {
@@ -128,6 +130,13 @@ function validate_seqpos_cell( cell ) {
         $(cell).css("background-color", "white");
         return true;
     }
+}
+
+function update_table_validation_rules() {
+    $('.aacountcell').blur( function() {validate_cell(this, aacountcell_valid );} );
+    $('.seqposcell').blur( function() { validate_cell(this, seqpos_cell_valid );} );
+    $('.primercell').blur( function() { validate_cell(this, primer_boundary_valid ); } );
+    $('.maxdccell').blur( function() { validate_cell(this, max_dcs_per_pos_valid ); } );
 }
 
 function tims_problem() {
@@ -371,7 +380,7 @@ function validate_inputs_and_launch( launch_button ) {
     }
     else {
         libsize_upper_val = parseFloat( $(libsize_upper).val() );
-        var lisize_lower_is_valid = validate_cell( libsize_lower, function( the_arg ) { return libsize_lower_valid( libsize_upper_val, the_arg ); } );
+        var lisize_lower_is_valid = validate_cell( libsize_lower, function( cell_val ) { return libsize_lower_valid( libsize_upper_val, cell_val ); } );
         if ( ! libsize_lower_valid ) {
             any_erors =  true;
         } else {
