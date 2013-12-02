@@ -39,5 +39,6 @@ $(document).ready(function () {
 	$('.seqposcell').blur( function() { validate_seqpos_cell(this);} );
 	$('#launchbutton').click( function() { validate_inputs_and_launch(this); } );
 	$("#table_from_csv").click( populate_table_from_csv );
+	$("#table_from_fasta").click( populate_table_from_fasta );
 });
 
