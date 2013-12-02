@@ -1,5 +1,15 @@
 /// Copyright 2013, Andrew Leaver-Fay
 
+function val_is_integer( val_string ) {
+    var val_as_int = parseInt( val_string );
+    return val_as_int === val_as_int;
+}
+
+function val_is_number( val_string ) {
+    var val_as_float = parseFloat( val_string );
+    return val_as_float === val_as_float;
+}
+
 function aacountcell_valid(cell_val) {
     if ( cell_val === "" ) return true;
     if ( cell_val === "!" ) return true;
@@ -12,29 +22,88 @@ function aacountcell_valid(cell_val) {
     return true;
 }
 
+function primer_boundary_valid( cell_val ) {
+    return cell_val === "-" || cell_val === "|";
+}
+
+function max_dcs_per_pos_valid( cell_val ) {
+    return cell_val === "1" || cell_val === "2";
+}
+
+function stop_codon_penalty_valid( cell_val ) { return cell_val === "" || val_is_integer( cell_val ); }
+
+function libsize_upper_valid( cell_val ) { return val_is_number( cell_val ); }
+
+function libsize_lower_valid( libsize_upper, cell_val ) {
+    if ( cell_val === "" ) return true;
+    if ( ! val_is_number( cell_val ) ) return false;
+    var libsize_lower = parseFloat( cell_val );
+    if ( libsize_lower < 0 ) return false;
+    return libsize_lower < libsize_upper;
+}
+
+function max_extra_primers_valid( cell_val ) {
+    if ( cell_val === "" ) return $('#primerboundary_row').is(':visible');
+    return val_is_integer( cell_val );
+}
+
+function enable_or_disable_mdcs( allow_mdcs ) {
+    //alert( $(allow_mdcs).text() );
+    $(('#primerboundary_row')).toggle();
+    $(('#maxdcs_row')).toggle();
+    $(('#max_extra_dcs_input')).toggle();
+    
+    if ( $(allow_mdcs).text() === "Allow Mult. Deg. Codons" ) {
+        $(allow_mdcs).text( "Disable Mult. Deg. Codons" );
+    } else {
+        $(allow_mdcs).text( "Allow Mult. Deg. Codons" );
+    }
+}
+
 function add_column_to_aacounts() {
-	var header_row = $('#aacounts').find('thead tr');
-	$(header_row).append('<th class="accept">Drag Me</th>');
+    var header_row = $('#aacounts').find('thead tr');
+    $(header_row).append('<th class="accept">Drag</th>');
 
-	var rows = $('#aacounts').find('tbody tr');
-	$(rows[0]).append('<td><input type="text" name="test" class=seqposcell size=4></td>');
-	for (var i = 1; i < rows.length; ++i) {
-		$(rows[i]).append('<td><input type="text" name="test" class=aacountcell size=4 ></td>');
-	}
+    var rows = $('#aacounts').find('tbody tr');
+    $(rows[0]).append('<td><input type="text" name="test" class=seqposcell size=4></td>');
+    $(rows[1]).append('<td><input type="text" name="primer" class=primercell size=4 value="-"></td>');
+    $(rows[2]).append('<td><input type="text" name="maxdc" class=maxdccell size=4 value="1"></td>');
+    for (var i = 3; i < rows.length; ++i) {
+        $(rows[i]).append('<td><input type="text" name="test" class=aacountcell size=4 ></td>');
+    }
 
-	$( '#aacounts' ).dragtable('destroy').dragtable({
-		dragaccept:'.accept'
-	});
+    $( '#aacounts' ).dragtable('destroy').dragtable({
+        dragaccept:'.accept'
+    });
 }
 
 function delete_column_from_aacounts() {
-    $('#aacounts').find('tr').each(function () {
+    var aacounts_table = $('#aacounts');
+    aacounts_table.find('tr').each(function () {
             //alert("this.length:" + this.childNodes.length );
             //$(this).removeChild( this.lastChild );
             if ($(this).find('td').length > 1) {
                 $(this).find('td:last').remove();
             }
-        })
+        });
+    aacounts_table.find('thead').each(function() {
+            $(this).find('tr').each( function() {
+                    if ( $(this).find('th').length > 1 ) {
+                        $(this).find('th:last').remove();
+                    }
+                } );
+        });
+}
+
+function validate_cell( cell, cell_valid ) {
+    var val=$(cell).val();
+    if ( cell_valid( $(cell).val() )) {
+        $(cell).css( "background-color", "white" );
+        return true;
+    } else {
+        $(cell).css( "background-color", "pink" );
+        return false;
+    }
 }
 
 function validate_aacount_cell( cell ) {
@@ -45,6 +114,10 @@ function validate_aacount_cell( cell ) {
         $(cell).css("background-color", "white");
         return true;
     }
+}
+
+function seqpos_cell_valid( cell_val ) {
+    return cell_val !== "";
 }
 
 function validate_seqpos_cell( cell ) {
@@ -84,20 +157,35 @@ function tims_problem() {
     return csv_string;
 }
 
-function load_library_from_table( library, scp_int ) {
+function load_library_from_table( library, scp_int, max_dcs ) {
     // turn the user-provided input into a CSV string
     var rows = [];
-    var trs = $('#aacounts').find('tr');
+    var trs = $('#aacounts tbody').find('tr');
+    var allow_mdcs = $('#primerboundary_row').is(':visible');
+
+    library.max_extra_primers = allow_mdcs ? max_dcs : 0;
+
     for ( var i=0; i < trs.length; ++i ) {
         var tds = $(trs[i]).find('td');
         var icols = []
         for ( var j=0; j < tds.length; ++j ) {
             var jcontents;
-            if ( j == 0 ) { jcontents = $(tds[j]).val(); }
-            else {
-                jcontents = strip_whitespace( $($(tds[j]).find("input")[0]).val() );
-                if ( i !== 0 && jcontents === "" ) { jcontents = "0"; }
-                if ( i == 21 && scp_int !== 0 ) { jcontents = scp_int.toString(); }
+            if ( j === 0 ) {
+                jcontents = $(tds[j]).val();
+            } else {
+                var jval = strip_whitespace( $($(tds[j]).find("input")[0]).val() );
+                if ( i === 1 ) {
+                    if ( allow_mdcs ) { jcontents = jval; }
+                    else { jcontents = "-"; }
+                } else if ( i === 2 ) {
+                    if ( allow_mdcs ) { jcontents = jval; }
+                    else { jcontents = "1"; }
+                } else {
+                    // the amino-acid rows
+                    jcontents = jval;
+                    if ( i !== 0 && jcontents === "" ) { jcontents = "0"; }
+                    if ( i === 23 && scp_int !== 0 ) { jcontents = scp_int.toString(); }
+                }
             }
             icols.push( jcontents );
         }
@@ -126,7 +214,7 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
     var output_html = []
     for ( var i=0; i < error_list.length; ++i ) {
         var table_i = [];
-        var error_trace = library.traceback_from_error_level( error_list[i] );
+        var error_trace = library.traceback_mdcs_from_nextra_and_error( error_list[i][0], error_list[i][1] );
         var i_data = report_output_library_data( library, error_trace, diversity_cap );
         var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td>" +
                          "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td></tr><tr><td>",
@@ -185,8 +273,8 @@ function populate_table_from_csv() {
     var csv_contents = $('#csvaacounts').val().split("\n");
     var csv_data = []
     var nrows = csv_contents.length;
-    if ( nrows != 22 ) {
-        var msg = "<p>Could not update table from CSV contents.  Expected to find 22 rows, but found " + nrows + "</p>";
+    if ( nrows != 24 ) {
+        var msg = "<p>Could not update table from CSV contents.  Expected to find 24 rows, but found " + nrows + "</p>";
         $('#update_result').html(msg).css("color","red").show();
         return;
     }
@@ -227,7 +315,7 @@ function populate_table_from_csv() {
         }
     }
 
-    // now populate the table from the csv contents 
+    // now populate the table from the csv contents
     for ( var i=0; i < trs.length; ++i ) {
         var tds = $(trs[i]).find("td");
         var row_i = csv_data[i];
@@ -246,86 +334,94 @@ function handle_tab_vs_csv_change( rad_button ) {
 
 function validate_inputs_and_launch( launch_button ) {
 
-    //disable inputs while working	
+    //disable inputs while working
     //$(launch_button).attr("disabled", true);
 
-    var trs = $('#aacounts').find('tr');
+    var trs = $('#aacounts tbody').find('tr');
     var any_errors = false;
     for (var i = 0; i < trs.length; ++i) {
         var tds = $(trs[i]).find('td');
-        if (i === 0) {
-            for (var j = 1; j < tds.length; ++j) {
-                if ( !validate_seqpos_cell( $(tds[j]).find('input')[0])) any_errors = true;
-            }
-        } else {
-            for (var j = 1; j < tds.length; ++j) {
-                if ( !validate_aacount_cell( $(tds[j]).find('input')[0])) any_errors = true;
+        for (var j = 1; j < tds.length; ++j) {
+            var ij_input = $(tds[j]).find('input')[0];
+            if (i === 0) {
+                if ( ! validate_cell( ij_input, seqpos_cell_valid     ) ) any_errors = true;
+            } else if ( i === 1 ) {
+                if ( ! validate_cell( ij_input, primer_boundary_valid  ) ) any_errors = true;
+            } else if ( i === 2 ) {
+                if ( ! validate_cell( ij_input, max_dcs_per_pos_valid ) ) any_errors = true;
+            } else {
+                if ( ! validate_cell( ij_input, aacountcell_valid     ) ) any_errors = true;
             }
         }
     }
-    
+
     // also validate the stop-codon penalty, and the upper and lower bounds cells.
-    var scp_str = $("#stop_codon_penalty").val();
-    var scp_int = -1 * Math.abs( parseInt( scp_str ) );
-    if ( scp_str != "" && ( scp_int != scp_int ) ) {
-        $("#stop_codon_penalty").css("background-color","pink");
-        any_errors = true;
-    } else {
-        $("#stop_codon_penalty").css("background-color","white");
-        if ( scp_int != scp_int ) {
-            scp_int = 0;
+    var scp = $('#stop_codon_penalty');
+    var scp_valid = validate_cell( scp, stop_codon_penalty_valid );
+    if ( ! scp_valid ) { any_errors = true; }
+
+    var libsize_upper = $('#libsize_upper');
+    var libsize_lower = $('#libsize_lower');
+    var libsize_upper_is_valid = validate_cell( libsize_upper, libsize_upper_valid );
+    var libsize_upper_val;
+    var libsize_lower_val;
+    if ( ! libsize_upper_is_valid ) { any_errors = true; }
+    else {
+        libsize_upper_val = parseFloat( $(libsize_upper).val() );
+        var lisize_lower_is_valid = validate_cell( libsize_lower, function( the_arg ) { return libsize_lower_valid( libsize_upper_val, the_arg ); } );
+        if ( ! libsize_lower_valid ) {
+            any_erors =  true;
+        } else {
+            libsize_lower_val = parseFloat( $(libsize_lower).val() );
         }
     }
 
-    var ub_str = $('#libsize_upper').val();
-    var ub_float = parseFloat( ub_str );
-    if ( ub_float != ub_float || ub_float < 0 ) {
-        $('#libsize_upper').css("background-color","pink");
-        any_errors = true;
-    } else {
-        $('#libsize_upper').css("background-color","white");
-    }
+    var max_extra_primers = $('#max_extra_primers');
+    if ( ! validate_cell( max_extra_primers, max_extra_primers_valid ) ) any_errors = true;
 
-    var lb_str = $('#libsize_lower').val();
-    var lb_float = parseFloat( lb_str );
-    if ( lb_str != "" && ( lb_float != lb_float || lb_float < 0 || lb_float > ub_float )) {
-        $('#libsize_lower').css("background-color","pink");
-        any_errors = true;
-    } else {
-        $('#libsize_lower').css("background-color","white");
-    }
-        
     if ( any_errors ) {
         alert( "Errors in inputs" );
         return;
     }
 
+    var max_extra_primers_val = parseInt( $(max_extra_primers).val() );
+    if ( max_extra_primers_val !== max_extra_primers_val ) {
+        max_extra_primers_val = 0;
+    }
+
+    // always consider the stop codon penalty to represent a negative number
+    var scp_int = -1 * Math.abs( parseInt( $(scp).val() ) );
+    if ( scp_int !== scp_int ) {
+        scp_int = 0;
+    }
+
+
     // do the actual computation after we've updated the DOM.
     setTimeout( function () {
         var starttime = new Date().getTime();
         var library = AALibrary();
-        load_library_from_table( library, scp_int );
-        library.compute_smallest_diversity_for_all_errors();
+        load_library_from_table( library, scp_int, max_extra_primers_val );
+        library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
         if ( verify_solution_exists( library )) {
-            library.optimize_library();
-            if ( lb_float != lb_float ) {
-                var error_list = [ library.find_minimal_error_beneath_diversity_cap( ub_float ) ];
+            library.optimize_library_multiple_dcs();
+            if ( libsize_lower_val != libsize_lower_val ) {
+                var error_list = [ library.find_minimal_error_beneath_diversity_cap_mdcs( libsize_upper_val ) ];
             } else {
-                var error_list = library.errors_in_diversity_range( ub_float, lb_float );
+                var error_list = library.errors_in_diversity_range( libsize_upper_val, libsize_lower_val );
                 console.log( "Error list: ", error_list.join(",") );
             }
             var stoptime = new Date().getTime();
-            var output_html = "Running time: " + (( stoptime - starttime ) / 1000 )+ " seconds<br>" + output_tables_from_error_values( library, error_list, ub_float );
-    
+            var output_html = "Running time: " + (( stoptime - starttime ) / 1000 )+ " seconds<br>" + output_tables_from_error_values( library, error_list, libsize_upper_val );
+
             $('#resultdiv').html( output_html );
-    
+
         } else {
             $('#resultdiv').html( "<p id=scrollhere > No solution exists for the given set of required (*) and forbidden (!) amino acids </p>" );
         }
         //$(launch_button).attr("disabled", false);
         $('#scrollhere').scrollIntoView();
     }, 1 );
-        
+
 }
 
 // Local Variables:

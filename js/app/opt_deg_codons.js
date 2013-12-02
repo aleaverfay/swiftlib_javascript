@@ -675,7 +675,8 @@ function AALibrary() {
     }
 
     library.find_positions_wo_viable_solutions = function() {
-        var pos_w_no_viable_solutions = []
+        var pos_w_no_viable_solutions = [];
+        return []; /// TEMP!
         for ( var i=0; i < this.n_positions; ++i ) {
             var ok = false;
             for ( var j=0; j < this.max_per_position_error; ++j ) {
@@ -886,14 +887,20 @@ function AALibrary() {
     };
 
     library.find_minimal_error_beneath_diversity_cap_mdcs = function ( diversity_cap ) {
+        var log_diversity_cap =  Math.log( diversity_cap );
         var best_error = this.infinity;
         var best_nextra = this.infinity;
         for ( var ii=0; ii <= this.max_extra_primers; ++ii ) {
             var ii_dp_divmin = this.dp_divmin_for_error_mdcs[ this.n_positions-1 ][ ii ];
+            var iibest = this.infinity;
             for ( var jj=0; jj <= this.error_span; ++jj ) {
                 if ( ! ii_dp_divmin.hasOwnProperty( jj ) ) continue;
                 var jjdiversity = ii_dp_divmin[jj];
-                if ( jjdiversity > diversity_cap ) continue;
+                if ( jjdiversity > log_diversity_cap ) continue;
+                if ( iibest === this.infinity ) {
+                    console.log( "Best given the use of " + ii + " extra primers: error " + jj + " with diversity " + jjdiversity + " vs cap of " + log_diversity_cap );
+                    iibest = jj;
+                }
                 if ( best_error === this.infinity || jj < best_error ) {
                     best_error = jj;
                     best_nextra = ii;

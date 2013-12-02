@@ -28,6 +28,11 @@ $(document).ready(function () {
 		dragaccept:'.accept'
 	});
 
+	$('#primerboundary_row').hide();
+	$('#maxdcs_row').hide();
+	$('#max_extra_dcs_input').hide();
+
+	$('#allow_mult_dcs').click( function() { enable_or_disable_mdcs( this ); } );
 	$('#add').click( add_column_to_aacounts );
 	$('#delcol').click( delete_column_from_aacounts );
 	$('.aacountcell').blur( function() {validate_aacount_cell(this);} );
