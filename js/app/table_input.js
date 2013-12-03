@@ -217,7 +217,7 @@ function verify_solution_exists( library ) {
     }
 
     var trs = $('#aacounts').find( 'tr' );
-    for ( var i=0; i < nosolution_pos.length; ++i ) {
+    for ( var i=0; i < library.n_positions; ++i ) {
         for ( var j=0; j < trs.length; ++j ) {
             var jtd = $(trs[j]).find('td')[ i+1 ];
             if ( nosolution_pos[i] ) {
@@ -606,8 +606,23 @@ function validate_inputs_and_launch( launch_button ) {
                 console.log( "Error list: ", error_list.join(",") );
             }
             var stoptime = new Date().getTime();
-            var output_html = "Running time: " + (( stoptime - starttime ) / 1000 )+ " seconds<br>" + output_tables_from_error_values( library, error_list, libsize_upper_val );
 
+            var output_html;
+            if ( error_list.length === 0 || ( error_list.length === 1 && error_list[0][0] === library.infinity ) ) {
+                var smallest_diversity = library.find_smallest_diversity();
+                output_html = '<p id=scrollhere style="color:red;">No library could be constructed beneath the given size limit; ' +
+                    "the smallest library that could be constructed contained a diversity of ";
+                if ( smallest_diversity < Math.log( 100 )) {
+                    output_html += Math.round( Math.exp( smallest_diversity ) );
+                } else {
+                    output_html += Math.exp( smallest_diversity ).toExponential(3);
+                }
+                output_html += ".</p>";
+            } else {
+
+                output_html = "Running time: " + (( stoptime - starttime ) / 1000 ) + " seconds<br>" +
+                    output_tables_from_error_values( library, error_list, libsize_upper_val );
+            }
             $('#resultdiv').html( output_html );
 
         } else {

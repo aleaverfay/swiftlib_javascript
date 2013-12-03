@@ -997,6 +997,21 @@ function AALibrary() {
         return [ best_nextra, best_error ];
     };
 
+    library.find_smallest_diversity = function () {
+        var smallest_diversity = this.infinity;
+        for ( var ii = 0; ii <= this.max_extra_primers; ++ii ) {
+            var ii_dp_divmin = this.dp_divmin_for_error_mdcs[ this.n_positions-1 ][ ii ];
+            for ( var jj = 0; jj <= this.error_span; ++jj ) { 
+                if ( ! ii_dp_divmin.hasOwnProperty( jj ) ) continue;
+                var jjdiv = ii_dp_divmin[jj];
+                if ( smallest_diversity === this.infinity || smallest_diversity > jjdiv ) {
+                    smallest_diversity = jjdiv;
+                }
+            }
+        }
+        return smallest_diversity;
+    };
+
     library.traceback_mdcs_from_nextra_and_error = function( nextra, error_level ) {
         var error_traceback = [];
         for ( var i=0; i < this.n_positions; ++i ) { error_traceback[i] = [ this.infinity, this.infinity ]; }
