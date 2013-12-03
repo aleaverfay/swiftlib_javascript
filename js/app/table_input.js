@@ -335,6 +335,175 @@ function populate_table_from_csv() {
     $('#update_result').html('<p>Successfully updated the table</p>').css("color","green").show();
 }
 
+function populate_table_from_fasta () {
+    var fasta_contents = $('#fasta').val().split(">");
+    fasta_contents.shift();//remove anything before the first '>'
+
+    var nsequences = fasta_contents.length;
+    console.log(nsequences);
+    if ( nsequences <= 1 ) {
+        var msg = "<p>You must specify at least 2 FASTA files to update the table.</p>";
+        $('#update_result').html(msg).css("color","red").show();
+        return;
+    }
+
+    //initialize table array, set defaults for table positions not definable in the FASTA format
+    var seq_length = fasta_contents[0].substr(fasta_contents[0].indexOf('\n')+1).trim().split('').length;
+    var table_contents = [];
+    for( var i=0; i < 24; ++i) {
+        table_contents[i] = [];
+    }
+    for( var j=0; j < seq_length; ++j) {
+        table_contents[0][j] = j+1;
+        table_contents[1][j] = '-';
+        table_contents[2][j] = 1;
+        for( var k=3; k<=23; ++k ) {
+            table_contents[k][j] = 0;
+        }
+    }
+
+    for( var i=0; i < nsequences; ++i ) {
+        var cur_seq = fasta_contents[i].substr(fasta_contents[i].indexOf('\n')+1).trim().split('');
+        console.log(cur_seq);
+        var cur_length = cur_seq.length;
+        if(cur_length != seq_length) {
+            var msg = "<p>All FASTA sequences must be the same length. Sequence " + i+1 + " is not the same size as previous sequences</p>";
+            $('#fasta_errors').html(msg).css("color","red").show();
+            return;
+        }
+
+        for( var j=0; j < seq_length; ++j ) {
+            switch(cur_seq[j].toUpperCase()) {
+                case 'A':
+                    table_contents[3][j]++;
+                    break;
+                case 'C':
+                    table_contents[4][j]++;
+                    break;
+                case 'D':
+                    table_contents[5][j]++;
+                    break;
+                case 'E':
+                    table_contents[6][j]++;
+                    break;
+                case 'F':
+                    table_contents[7][j]++;
+                    break;
+                case 'G':
+                    table_contents[8][j]++;
+                    break;
+                case 'H':
+                    table_contents[9][j]++;
+                    break;
+                case 'I':
+                    table_contents[10][j]++;
+                    break;
+                case 'K':
+                    table_contents[11][j]++;
+                    break;
+                case 'L':
+                    table_contents[12][j]++;
+                    break;
+                case 'M':
+                    table_contents[13][j]++;
+                    break;
+                case 'N':
+                    table_contents[14][j]++;
+                    break;
+                case 'P':
+                    table_contents[15][j]++;
+                    break;
+                case 'Q':
+                    table_contents[16][j]++;
+                    break;
+                case 'R':
+                    table_contents[17][j]++;
+                    break;
+                case 'S':
+                    table_contents[18][j]++;
+                    break;
+                case 'T':
+                    table_contents[19][j]++;
+                    break;
+                case 'V':
+                    table_contents[20][j]++;
+                    break;
+                case 'W':
+                    table_contents[21][j]++;
+                    break;
+                case 'Y':
+                    table_contents[22][j]++;
+                    break;
+                default:
+                    var msg = "<p>Invalid amino acid code in sequence " + i+1 + " position " + j+1 + "</p>";
+                    $('#fasta_errors').html(msg).css("color","red").show();
+                    return;
+            }
+        }
+    }
+
+    //Table dump, debugging
+    //for( var i=0; i < table_contents.length; ++i ) {
+    //    var line='';
+    //    for( var j=0; j < table_contents[i].length; ++j ) {
+    //        line += table_contents[i][j] + ",";
+    //    }
+    //}
+
+    //remove non-variable positions
+	var nvariable_positions = 0;
+	var nremoved_positions = 0;
+    for( var i=0; i < seq_length - nremoved_positions; ++i ) {
+        var num_aas=0;
+        for( var j=3; j < 23; ++j ) {
+            if( table_contents[j][i] > 0 ) {
+                ++num_aas;
+            }
+        }
+        if(num_aas <= 1) {
+            for( var j=0; j < 24; ++j ) {
+                table_contents[j].splice(i, 1);
+            }
+			--i;
+			++nremoved_positions;
+    	}
+		else {
+			nvariable_positions++
+		}
+    }
+
+	if( nvariable_positions <= 0 ) {
+		var msg = "<p>You must have variability in at least one positions in the set of sequences</p>";
+		$('#fasta_errors').html(msg).css("color","red").show();
+    	return;
+	}
+
+    //resize the table
+    var trs = $('#aacounts tbody').find('tr');
+    var ncolumns_curr = $(trs[0]).find('td').length - 1;
+    if ( ncolumns_curr < nvariable_positions ) {
+        for ( var i=ncolumns_curr; i < nvariable_positions; ++i ) {
+            add_column_to_aacounts();
+        }
+    } else {
+        for ( var i=ncolumns_curr; i > nvariable_positions; --i ) {
+            delete_column_from_aacounts();
+        }
+    }
+
+    //populate the table
+    var trs = $('#aacounts tbody').find('tr');
+    for ( var i=0; i < trs.length; ++i ) {
+        var tds = $(trs[i]).find("td");
+        var row_i = table_contents[i];
+        for ( var j=0; j < row_i.length; ++j ) {
+            $($(tds[j+1]).find("input")[0]).val( row_i[j] );
+        }
+    }
+    $('#fasta_errors').html('<p>Successfully updated the table</p>').css("color","green").show();
+    return;
+}
+
 function handle_tab_vs_csv_change( rad_button ) {
     var new_csv = create_csv_from_table();
     $('#csvaacounts').val( new_csv );
@@ -342,10 +511,6 @@ function handle_tab_vs_csv_change( rad_button ) {
 
 
 function validate_inputs_and_launch( launch_button ) {
-
-    //disable inputs while working
-    $(launch_button).button("option","disabled", true);
-    $(launch_button).button( "option", "label", "Working..." );
 
     var trs = $('#aacounts tbody').find('tr');
     var any_errors = false;
@@ -410,6 +575,10 @@ function validate_inputs_and_launch( launch_button ) {
     }
 
 
+    //disable inputs while working
+    $(launch_button).button("option","disabled", true);
+    $(launch_button).button( "option", "label", "Working..." );
+
     // do the actual computation after we've updated the DOM.
     setTimeout( function () {
         var starttime = new Date().getTime();
@@ -436,7 +605,6 @@ function validate_inputs_and_launch( launch_button ) {
         $(launch_button).button( "option", "label", "Generate Library" );
         $('#scrollhere').scrollIntoView();
     }, 1 );
-
 }
 
 // Local Variables:

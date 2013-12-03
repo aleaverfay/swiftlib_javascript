@@ -40,5 +40,7 @@ $(document).ready(function () {
 
 	$('#libsize_upper').blur( function() { validate_cell( this, libsize_upper_valid ); } );
 	update_table_validation_rules();
+
+	$("#table_from_fasta").click( populate_table_from_fasta );
 });
 
