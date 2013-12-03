@@ -576,8 +576,8 @@ function validate_inputs_and_launch( launch_button ) {
 
 
     //disable inputs while working
-    $(launch_button).button("option","disabled", true);
-    $(launch_button).button( "option", "label", "Working..." );
+    // APL TEMP $(launch_button).button("option","disabled", true);
+    // APL TEMP $(launch_button).button( "option", "label", "Working..." );
 
     // do the actual computation after we've updated the DOM.
     setTimeout( function () {

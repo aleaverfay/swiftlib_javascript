@@ -211,7 +211,7 @@ function LexicographicalIterator( dims ) {
         var beyond_end = false;
         for ( var i=0; i < this.size; ++i ) {
             this.pos[ i ] = i;
-            if ( i > this.dimsizes[ i ] ) { beyond_end = true; }
+            if ( i >= this.dimsizes[ i ] ) { beyond_end = true; }
         }
         if ( beyond_end ) {
             for ( var i=0; i < this.size; ++i ) { this.pos[i] = 0; }
@@ -405,7 +405,7 @@ function AALibrary() {
         }
     }
 
-    //format should be a table with N columns and 21 rows
+    //format should be a table with N columns and 23 rows
     // row 1 is a header, which just gives the sequence positions
     // row 2 defines primer boundaries
     // row 3 gives the maximum number of DCs for each position
@@ -507,12 +507,36 @@ function AALibrary() {
         return error;
     };
 
+    // Returns the error for a given set of amino acids. Returns an error even
+    // if then given set of aas does not include all of the required aas, but
+    // returns infinity if it includes one of the forbidden amino acids
+    library.error_given_aas_for_pos_ignore_req = function( pos, aas ) {
+        var error = 0;
+        for ( var i=0; i < 21; ++i ) {
+            var icount = this.aa_counts[ pos ][ i ];
+            if ( ! aas[ i ] ) {
+                if ( icount > 0 ) {
+                    error += icount;
+                }
+            } else {
+                if ( this.forbidden[ pos ][ i ] ) {
+                    return this.infinity;
+                }
+                if ( icount < 0 ) {
+                    error -= icount;
+                }
+            }
+        }
+        return error;
+    };
+
     library.find_useful_codons = function() {
         var that = this;
         function useful_aaind_for_pos( aas, pos ) {
             var aaind = 0;
             for ( var i = 0; i < 21; ++i ) {
-                aaind = 2 * aaind + ( aas[i] && that.aa_counts[ pos ][ i ] > 0 ? 1 : 0 );
+                var iuseful = that.aa_counts[pos][i] > 0 || that.required[pos][i];
+                aaind = 2 * aaind + ( aas[i] && iuseful ? 1 : 0 );
             }
             return aaind;
         }
@@ -526,7 +550,7 @@ function AALibrary() {
             var iaas = this.aas_for_dc[ i ];
             var idiv = this.diversities_for_dc[ i ];
             for ( var j = 0; j < this.n_positions; ++j ) {
-                var ijerror = this.error_given_aas_for_pos( j, iaas );
+                var ijerror = this.error_given_aas_for_pos_ignore_req( j, iaas );
                 if ( ijerror === this.infinity ) continue;
                 var ij_aaind = useful_aaind_for_pos( iaas, j );
                 if ( ! div_for_codons[j].hasOwnProperty( ijerror ) ||
@@ -585,12 +609,15 @@ function AALibrary() {
 
         this.divmin_for_error_for_n_dcs_sparse = [];
         this.codons_for_error_for_n_dcs_sparse = [];
+        this.errors_for_n_dcs_for_position_sparse = [];
         for ( var i=0; i < this.n_positions; ++i ) {
             this.divmin_for_error_for_n_dcs_sparse[i] = [];
             this.codons_for_error_for_n_dcs_sparse[i] = [];
+            this.errors_for_n_dcs_for_position_sparse[i] = [];
             for ( var j=0; j < this.max_dcs_for_pos[i]; ++j ) {
-                this.divmin_for_error_for_n_dcs_sparse[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
-                this.codons_for_error_for_n_dcs_sparse[i][j] = newFilledArray( this.max_per_position_error, this.infinity );
+                this.divmin_for_error_for_n_dcs_sparse[i][j] = newFilledArray( this.max_per_position_error+1, this.infinity );
+                this.codons_for_error_for_n_dcs_sparse[i][j] = newFilledArray( this.max_per_position_error+1, this.infinity );
+                this.errors_for_n_dcs_for_position_sparse[i][j] = [];
             }
         }
         var aas_for_combo = newFilledArray( 21, false );
@@ -620,7 +647,10 @@ function AALibrary() {
 
                     var error = this.error_given_aas_for_pos( i, aas_for_combo );
                     if ( error !== this.infinity ) {
+                        // combinations of useful codons can still return infinity if the 
+                        // set of required amino acids is not covered
                         var prev_diversity = this.divmin_for_error_for_n_dcs_sparse[i][j-1][error];
+                        if ( prev_diversity === this.infinity ) { this.errors_for_n_dcs_for_position_sparse[i][j-1].push( error ); }
                         if ( prev_diversity === this.infinity || prev_diversity > log_diversity ) {
                             this.divmin_for_error_for_n_dcs_sparse[ i ][ j-1 ][ error ] = log_diversity;
                             this.codons_for_error_for_n_dcs_sparse[ i ][ j-1 ][ error ] = codon_inds_from_useful_codon_lex( i, jlex );
@@ -628,6 +658,7 @@ function AALibrary() {
                     }
                     jlex.upper_diagonal_increment();
                 }
+                this.errors_for_n_dcs_for_position_sparse[i][j-1].sort( function(a,b){return a-b} );
             }
         }
     }
@@ -676,19 +707,68 @@ function AALibrary() {
 
     library.find_positions_wo_viable_solutions = function() {
         var pos_w_no_viable_solutions = [];
-        return []; /// TEMP!
-        for ( var i=0; i < this.n_positions; ++i ) {
+
+        var all_ok_solo = true;
+        var ok_solo = [];
+        for ( var ii=0; ii < this.n_positions; ++ii ) {
+            if ( this.errors_for_n_dcs_for_position_sparse[ii][0].length === 0 ) {
+                ok_solo[ii] = false;
+                all_ok_solo = false;
+            } else {
+                ok_solo[ii] = true;
+            }
+        }
+
+        if ( all_ok_solo ) return pos_w_no_viable_solutions;
+
+        // otherwise, we have to make sure that
+        // 1. all positions have a solution even if they require more than 1 DC
+        // 2. no two positions that are on the same primer require more than 1 DC
+
+        var pos_has_some_solution = [];
+        for ( var ii=0; ii < this.n_positions; ++ii ) {
             var ok = false;
-            for ( var j=0; j < this.max_per_position_error; ++j ) {
-                if ( this.divmin_for_error[i][j] !== this.infinity ) {
+            var jjcap = Math.min( this.max_dcs_for_pos[ii], this.max_extra_primers+1 );
+            for ( var jj=1; jj < jjcap; ++jj ) {
+                if ( this.errors_for_n_dcs_for_position_sparse[ii][jj].length !== 0 ) {
                     ok = true;
                     break;
                 }
             }
             if ( ! ok ) {
-                pos_w_no_viable_solutions.push( i );
+                pos_w_no_viable_solutions.push( ii );
+                pos_has_some_solution[ ii ] = false;
+            } else {
+                pos_has_some_solution[ ii ] = true;
             }
         }
+
+        // now look at all the positions that are part of the
+        // same primer and make sure that, if they have some solution
+        // that at most one of them is not ok without multiple
+        // degenerate codons.
+
+        var visited = newFilledArray( this.n_positions, false );
+        for ( var ii = 0; ii < this.n_positions; ++ii ) {
+            if ( ok_solo[ ii ] || ! pos_has_some_solution[ ii ] ) continue;
+            var ii_primer_rep = this.primer_reps[ii];
+            if ( visited[ ii_primer_rep ] ) continue;
+            visited[ ii_primer_rep ] = true;
+            var ii_bad = false;
+            for ( var jj = ii+1; jj < this.n_positions; ++jj) {
+                var jj_primer_rep = this.primer_reps[jj];
+                if ( jj_primer_rep !== ii_primer_rep ) break;
+                if ( ! pos_has_some_solution[ jj ] ) continue;
+                if ( ! ok_solo[ jj ] ) {
+                    if ( ! ii_bad ) {
+                        pos_w_no_viable_solutions.push( ii );
+                        ii_bad = true;
+                    }
+                    pos_w_no_viable_solutions.push( jj );
+                }
+            }
+        }
+
         return pos_w_no_viable_solutions;   
     }
 
@@ -848,11 +928,17 @@ function AALibrary() {
                         var ll_divmin = this.divmin_for_error_for_n_dcs_sparse[ii][ll];
                         var jj_dp_divmin = this.dp_divmin_for_error_mdcs[ii-1][jj-ll];
                         var jj_last_mdc_primer_rep = this.dp_last_mdc_primer_rep[ii-1][jj-ll];
-                        for ( var mm = 0; mm <= this.max_per_position_error; ++mm ) {
-                            // mm error being contributed by this position
-                            // optimize this loop by precomputing the set of errors given ii, ll.
-                            var iprev_error = kk-mm;
-                            var mm_diversity = ll_divmin[mm];
+
+                        var iill_errors = this.errors_for_n_dcs_for_position_sparse[ii][ll];
+                        var iill_nerrors = iill_errors.length;
+
+                        for ( var mm = 0; mm < iill_nerrors; ++mm ) {
+                            var mmerror = iill_errors[ mm ];
+                            // mmerror being contributed by this position
+                            if ( mmerror > kk ) break; // no need to keep looking
+
+                            var iprev_error = kk-mmerror;
+                            var mm_diversity = ll_divmin[mmerror];
                             if ( mm_diversity === this.infinity ) continue;
                             if ( ! jj_dp_divmin.hasOwnProperty( iprev_error ) ) continue;
                             if ( ll !== 0 && jj_last_mdc_primer_rep[ iprev_error ] === ii_primer_rep ) continue;
@@ -861,7 +947,7 @@ function AALibrary() {
                             var divsum = mm_diversity + jj_dp_divmin[ iprev_error ];
                             if ( kk_best_libsize === this.infinity || divsum < kk_best_libsize ) {
                                 kk_best_libsize = divsum;
-                                kk_best_ii_error = mm;
+                                kk_best_ii_error = mmerror;
                                 kk_best_ii_nprimers = ll;
                             }
                         } // end mm loop -- the error contribued by ii given ll degenerate codons are coming from ii
