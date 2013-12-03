@@ -434,6 +434,7 @@ function populate_table_from_fasta () {
     }
 
     //Debugging output
+    console.log("pre_delete");
     for( var i=0; i < table_contents.length; ++i ) {
         var line='';
         for( var j=0; j < table_contents[i].length; ++j ) {
@@ -441,7 +442,33 @@ function populate_table_from_fasta () {
         }
         console.log(line);
     }
-    
+
+    //remove non-variable positions
+    for( var i=0; i < seq_length; ++i ) {
+        var num_aas=0;
+        for( var j=3; j < 23; ++j ) {
+            console.log(table_conrents[j][i]);
+            if( table_contents[j][i] > 0 ) {
+                ++num_aas;
+            }
+        }
+        if(num_aas < = 0) {
+            for( var j=3; j < 23; ++j ) {
+                table_contents[i].split(j);
+            }
+        }
+    }
+
+    //Debugging output
+    console.log("post_delete");
+    for( var i=0; i < table_contents.length; ++i ) {
+        var line='';
+        for( var j=0; j < table_contents[i].length; ++j ) {
+            line += table_contents[i][j] + ",";
+        }
+        console.log(line);
+    }
+
     //resize the table
     var trs = $('#aacounts tbody').find('tr');
     var ncolumns_curr = $(trs[0]).find('td').length - 1;
