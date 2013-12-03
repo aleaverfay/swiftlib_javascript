@@ -11,7 +11,7 @@ function newFilledArray( len, val ) {
     }
     return newarray;
 }
-        
+
 function binBoolString( val ) {
     if ( val ) { return "1"; }
     return "0";
@@ -362,7 +362,7 @@ function DegenerateCodon()  {
 
 function AALibrary() {
     var library = {};
-    
+
     function init( library ) {
         library.infinity = -1.0;
         library.gcmapper = GeneticCodeMapper();
@@ -412,7 +412,7 @@ function AALibrary() {
     // column 1 gives the amino acid names
     // row1/column1 gives nothing
     // all other row/column combinations should be integers
-    library.load_library = function( csv_contents ) {        
+    library.load_library = function( csv_contents ) {
         var lines = csv_contents.split("\n");
         row1 = lines[0].split(",");
         this.n_positions = row1.length-1;
@@ -473,7 +473,7 @@ function AALibrary() {
             }
             console.log( vals.join(", ") );
         }
-        for ( var i=0; i < this.n_positions; ++i ) { 
+        for ( var i=0; i < this.n_positions; ++i ) {
             if ( obs_count[i] > this.max_per_position_error ) {
                 this.max_per_position_error = obs_count[i];
             }
@@ -603,7 +603,7 @@ function AALibrary() {
             }
             return inds;
         }
-        
+
         this.enumerate_aas_for_all_degenerate_codons();
         this.find_useful_codons();
 
@@ -647,7 +647,7 @@ function AALibrary() {
 
                     var error = this.error_given_aas_for_pos( i, aas_for_combo );
                     if ( error !== this.infinity ) {
-                        // combinations of useful codons can still return infinity if the 
+                        // combinations of useful codons can still return infinity if the
                         // set of required amino acids is not covered
                         var prev_diversity = this.divmin_for_error_for_n_dcs_sparse[i][j-1][error];
                         if ( prev_diversity === this.infinity ) { this.errors_for_n_dcs_for_position_sparse[i][j-1].push( error ); }
@@ -706,7 +706,7 @@ function AALibrary() {
     }
 
     library.find_positions_wo_viable_solutions = function() {
-        var pos_w_no_viable_solutions = [];
+        var no_viable_solution_for_pos = newFilledArray( this.n_positions, false );
 
         var all_ok_solo = true;
         var ok_solo = [];
@@ -736,7 +736,7 @@ function AALibrary() {
                 }
             }
             if ( ! ok ) {
-                pos_w_no_viable_solutions.push( ii );
+                no_viable_solution_for_pos[ ii ] = true;
                 pos_has_some_solution[ ii ] = false;
             } else {
                 pos_has_some_solution[ ii ] = true;
@@ -761,18 +761,18 @@ function AALibrary() {
                 if ( ! pos_has_some_solution[ jj ] ) continue;
                 if ( ! ok_solo[ jj ] ) {
                     if ( ! ii_bad ) {
-                        pos_w_no_viable_solutions.push( ii );
+                        no_viable_solution_for_pos[ ii ] = true;
                         ii_bad = true;
                     }
-                    pos_w_no_viable_solutions.push( jj );
+                    no_viable_solution_for_pos[ jj ] = true;
                 }
             }
         }
 
-        return pos_w_no_viable_solutions;   
+        return no_viable_solution_for_pos;
     }
 
-                
+
     library.optimize_library = function() {
 
         //Run a dynamic programming algorithm to determine the minimum diversity for
@@ -922,7 +922,7 @@ function AALibrary() {
                     var kk_best_libsize = this.infinity;
                     var kk_best_ii_error = this.infinity;
                     var kk_best_ii_nprimers = this.infinity;
-                    var ll_limit = Math.min( this.max_dcs_for_pos[ii], jj+1 ); 
+                    var ll_limit = Math.min( this.max_dcs_for_pos[ii], jj+1 );
                     for ( var ll=0; ll < ll_limit; ++ll ) {
                         // ll: the number of degenerate codons - 1 from position ii
                         var ll_divmin = this.divmin_for_error_for_n_dcs_sparse[ii][ll];
@@ -964,7 +964,7 @@ function AALibrary() {
 
                 } // end kk loop -- the target amount of error
             } // end jj loop -- the number of extra primers used over the whole library
-        } // end  ii loop -- position from 
+        } // end  ii loop -- position from
     };
 
     library.traceback_mdcs = function( diversity_cap ) {
@@ -1082,7 +1082,7 @@ function record_codon_data( position, codon_inds, library ) {
     codon_data.log_aa_diversity = Math.log( aa_count );
 
     return codon_data;
-}    
+}
 
 function report_output_library_data( library, error_sequence ) {
     var dna_diversity_sum = 0;

@@ -208,15 +208,27 @@ function load_library_from_table( library, scp_int, max_dcs ) {
 
 function verify_solution_exists( library ) {
     var nosolution_pos = library.find_positions_wo_viable_solutions();
-    if ( nosolution_pos.length === 0 ) return true;
+    var all_ok = true;
+    for ( var ii = 0; ii < library.n_positions; ++ii ) {
+        if ( nosolution_pos[ ii ] ) { 
+            all_ok = false;
+            break;
+        }
+    }
+
     var trs = $('#aacounts').find( 'tr' );
     for ( var i=0; i < nosolution_pos.length; ++i ) {
         for ( var j=0; j < trs.length; ++j ) {
-            var jtd = $(trs[j]).find('td')[ nosolution_pos[i] + 1 ];
-            $(jtd).css("background-color", "pink");
+            var jtd = $(trs[j]).find('td')[ i+1 ];
+            if ( nosolution_pos[i] ) {
+                $(jtd).css("background-color", "pink");
+            } else {
+                $(jtd).css("background-color", "white");
+            }
         }
     }
-    return false;
+    return all_ok;
+
 }
 
 function output_tables_from_error_values( library, error_list, diversity_cap )  {
