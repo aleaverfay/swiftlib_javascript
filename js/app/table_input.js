@@ -237,10 +237,11 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
         var table_i = [];
         var error_trace = library.traceback_mdcs_from_nextra_and_error( error_list[i][0], error_list[i][1] );
         var i_data = report_output_library_data( library, error_trace, diversity_cap );
-        var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td>" +
+        var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td><td># Extra DCs</td>" +
                          "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td></tr><tr><td>",
                          (i+1).toString(), "</td><td>",
-                         error_list[i].toString(), "</td><td>",
+                         error_list[i][1].toString(), "</td><td>",
+                         error_list[i][0].toString(), "</td><td>",
                          i_data.dna_diversity.toExponential(3), "</td><td>",
                          i_data.aa_diversity.toExponential(3), "</td></tr></table><br>" ];
         var table = [];
@@ -588,8 +589,8 @@ function validate_inputs_and_launch( launch_button ) {
 
 
     //disable inputs while working
-    // APL TEMP $(launch_button).button("option","disabled", true);
-    // APL TEMP $(launch_button).button( "option", "label", "Working..." );
+    $(launch_button).button("option","disabled", true);
+    $(launch_button).button( "option", "label", "Working..." );
 
     // do the actual computation after we've updated the DOM.
     setTimeout( function () {
@@ -602,7 +603,7 @@ function validate_inputs_and_launch( launch_button ) {
             if ( libsize_lower_val != libsize_lower_val ) {
                 var error_list = [ library.find_minimal_error_beneath_diversity_cap_mdcs( libsize_upper_val ) ];
             } else {
-                var error_list = library.errors_in_diversity_range( libsize_upper_val, libsize_lower_val );
+                var error_list = library.errors_and_ndcs_in_diversity_range( libsize_upper_val, libsize_lower_val );
                 console.log( "Error list: ", error_list.join(",") );
             }
             var stoptime = new Date().getTime();

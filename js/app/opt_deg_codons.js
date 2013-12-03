@@ -719,7 +719,7 @@ function AALibrary() {
             }
         }
 
-        if ( all_ok_solo ) return pos_w_no_viable_solutions;
+        if ( all_ok_solo ) return no_viable_solution_for_pos;
 
         // otherwise, we have to make sure that
         // 1. all positions have a solution even if they require more than 1 DC
@@ -996,6 +996,24 @@ function AALibrary() {
         console.log( "Smallest error of " + best_error + " requires " + best_nextra + " extra degenerate codons" );
         return [ best_nextra, best_error ];
     };
+
+    library.errors_and_ndcs_in_diversity_range = function( diversity_upper_bound, diversity_lower_bound ) {
+        var errors_and_ndcs_in_range = [];
+        var log_ub = Math.log( diversity_upper_bound );
+        var log_lb = Math.log( diversity_lower_bound );
+        for ( var ii = 0; ii <= this.max_extra_primers; ++ii ) {
+            var ii_divmins = this.dp_divmin_for_error_mdcs[this.n_positions-1][ii];
+            for ( var jj = 0; jj <= this.error_span; ++jj ) {
+                if ( ! ii_divmins.hasOwnProperty(jj) ) continue;
+                var jjdiv = ii_divmins[jj];
+                if ( jjdiv <= log_ub && jjdiv >= log_lb ) {
+                    errors_and_ndcs_in_range.push( [ii,jj] );
+                }
+            }
+        }
+        errors_and_ndcs_in_range.sort( function(a,b){return a[1]-b[1];} );
+        return errors_and_ndcs_in_range;
+    }
 
     library.find_smallest_diversity = function () {
         var smallest_diversity = this.infinity;
