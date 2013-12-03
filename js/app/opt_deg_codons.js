@@ -922,6 +922,7 @@ function AALibrary() {
                     var kk_best_libsize = this.infinity;
                     var kk_best_ii_error = this.infinity;
                     var kk_best_ii_nprimers = this.infinity;
+                    var kk_best_last_mdc_primer_rep = this.infinity;
                     var ll_limit = Math.min( this.max_dcs_for_pos[ii], jj+1 );
                     for ( var ll=0; ll < ll_limit; ++ll ) {
                         // ll: the number of degenerate codons - 1 from position ii
@@ -949,6 +950,11 @@ function AALibrary() {
                                 kk_best_libsize = divsum;
                                 kk_best_ii_error = mmerror;
                                 kk_best_ii_nprimers = ll;
+                                if ( ll === 0 ) {
+                                    kk_best_last_mdc_primer_rep = jj_last_mdc_primer_rep[ iprev_error ];
+                                } else {
+                                    kk_best_last_mdc_primer_rep = ii_primer_rep;
+                                }
                             }
                         } // end mm loop -- the error contribued by ii given ll degenerate codons are coming from ii
                     } // end ll loop -- the number of degenerate codons coming from ii
@@ -956,9 +962,7 @@ function AALibrary() {
                     if ( kk_best_libsize !== this.infinity ) {
                         // we have a winner!
                         this.dp_divmin_for_error_mdcs[ii][jj][kk] = kk_best_libsize;
-                        if ( kk_best_ii_nprimers !== 0 ) {
-                            this.dp_last_mdc_primer_rep[ii][jj][kk] = ii_primer_rep;
-                        }
+                        this.dp_last_mdc_primer_rep[ii][jj][kk] = kk_best_last_mdc_primer_rep;
                         this.dp_traceback_mdcs[ii][jj][kk] = [ kk_best_ii_nprimers, kk_best_ii_error, kk - kk_best_ii_error ];
                     }
 
