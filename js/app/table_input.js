@@ -30,7 +30,9 @@ function max_dcs_per_pos_valid( cell_val ) {
     return cell_val === "1" || cell_val === "2";
 }
 
-function stop_codon_penalty_valid( cell_val ) { return cell_val === "" || val_is_integer( cell_val ); }
+function stop_codon_penalty_valid( cell_val ) {
+    return cell_val === "" || cell_val === "!" || val_is_integer( cell_val );
+}
 
 function libsize_upper_valid( cell_val ) { return val_is_number( cell_val ); }
 
@@ -166,7 +168,7 @@ function tims_problem() {
     return csv_string;
 }
 
-function load_library_from_table( library, scp_int, max_dcs ) {
+function load_library_from_table( library, scp_value, max_dcs ) {
     // turn the user-provided input into a CSV string
     var rows = [];
     var trs = $('#aacounts tbody').find('tr');
@@ -193,7 +195,7 @@ function load_library_from_table( library, scp_int, max_dcs ) {
                     // the amino-acid rows
                     jcontents = jval;
                     if ( i !== 0 && jcontents === "" ) { jcontents = "0"; }
-                    if ( i === 23 && scp_int !== 0 ) { jcontents = scp_int.toString(); }
+                    if ( i === 23 && scp_value !== "" ) { jcontents = scp_value; }
                 }
             }
             icols.push( jcontents );
@@ -582,21 +584,22 @@ function validate_inputs_and_launch( launch_button ) {
     }
 
     // always consider the stop codon penalty to represent a negative number
-    var scp_int = -1 * Math.abs( parseInt( $(scp).val() ) );
-    if ( scp_int !== scp_int ) {
-        scp_int = 0;
+    var scp_val = $(scp).val();
+    if ( scp_val !== "!" && scp_val !== "" ) {
+        var scp_int = -1 * Math.abs( parseInt( $(scp).val() ) );
+        scp_val = scp_int.toString();
     }
-
 
     //disable inputs while working
     $(launch_button).button("option","disabled", true);
     $(launch_button).button( "option", "label", "Working..." );
+    $('#resultdiv').html("");
 
     // do the actual computation after we've updated the DOM.
     setTimeout( function () {
         var starttime = new Date().getTime();
         var library = AALibrary();
-        load_library_from_table( library, scp_int, max_extra_primers_val );
+        load_library_from_table( library, scp_val, max_extra_primers_val );
         library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
         if ( verify_solution_exists( library )) {
             library.optimize_library_multiple_dcs();
