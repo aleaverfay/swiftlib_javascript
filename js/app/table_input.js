@@ -186,8 +186,13 @@ function load_library_from_table( library, scp_value, max_dcs ) {
             } else {
                 var jval = strip_whitespace( $($(tds[j]).find("input")[0]).val() );
                 if ( i === 1 ) {
-                    if ( allow_mdcs ) { jcontents = jval; }
-                    else { jcontents = "-"; }
+                    if ( allow_mdcs ) {
+                        if ( j === 1 ) {
+                            jcontents = "|"; // first position is always a primer boundary
+                        } else {
+                            jcontents = jval;
+                        }
+                    } else { jcontents = "-"; }
                 } else if ( i === 2 ) {
                     if ( allow_mdcs ) { jcontents = jval; }
                     else { jcontents = "1"; }
