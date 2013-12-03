@@ -433,51 +433,51 @@ function populate_table_from_fasta () {
         }
     }
 
-    //Debugging output
-    console.log("pre_delete");
-    for( var i=0; i < table_contents.length; ++i ) {
-        var line='';
-        for( var j=0; j < table_contents[i].length; ++j ) {
-            line += table_contents[i][j] + ",";
-        }
-        console.log(line);
-    }
+    //Table dump, debugging
+    //for( var i=0; i < table_contents.length; ++i ) {
+    //    var line='';
+    //    for( var j=0; j < table_contents[i].length; ++j ) {
+    //        line += table_contents[i][j] + ",";
+    //    }
+    //}
 
     //remove non-variable positions
-    for( var i=0; i < seq_length; ++i ) {
+	var nvariable_positions = 0;
+	var nremoved_positions = 0;
+    for( var i=0; i < seq_length - nremoved_positions; ++i ) {
         var num_aas=0;
         for( var j=3; j < 23; ++j ) {
-            console.log(table_conrents[j][i]);
             if( table_contents[j][i] > 0 ) {
                 ++num_aas;
             }
         }
-        if(num_aas < = 0) {
-            for( var j=3; j < 23; ++j ) {
-                table_contents[i].split(j);
+        if(num_aas <= 1) {
+            for( var j=0; j < 24; ++j ) {
+                table_contents[j].splice(i, 1);
             }
-        }
+			--i;
+			++nremoved_positions;
+    	}
+		else {
+			nvariable_positions++
+		}
     }
 
-    //Debugging output
-    console.log("post_delete");
-    for( var i=0; i < table_contents.length; ++i ) {
-        var line='';
-        for( var j=0; j < table_contents[i].length; ++j ) {
-            line += table_contents[i][j] + ",";
-        }
-        console.log(line);
-    }
+	if( nvariable_positions <= 0 ) {
+		var msg = "<p>You must have variability in at least one positions in the set of sequences</p>";
+		$('#fasta_errors').html(msg).css("color","red").show();
+    	return;
+	}
 
     //resize the table
     var trs = $('#aacounts tbody').find('tr');
     var ncolumns_curr = $(trs[0]).find('td').length - 1;
-    if ( ncolumns_curr < seq_length ) {
-        for ( var i=ncolumns_curr; i < seq_length; ++i ) {
+    if ( ncolumns_curr < nvariable_positions ) {
+        for ( var i=ncolumns_curr; i < nvariable_positions; ++i ) {
             add_column_to_aacounts();
         }
     } else {
-        for ( var i=ncolumns_curr; i > seq_length; --i ) {
+        for ( var i=ncolumns_curr; i > nvariable_positions; --i ) {
             delete_column_from_aacounts();
         }
     }
