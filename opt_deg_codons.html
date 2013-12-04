@@ -134,10 +134,11 @@
             <div id=table_aacounts class=table_input>
                 <table class=mytable id=aacounts>
                     <thead>
+		        <!--
                         <tr class=firstrow>
                             <th></th>
                             <th>Delete</th>
-                        </tr>
+                        </tr> -->
                         <tr class=firstrow>
                             <th></th>
                             <th class="accept">Drag</th>
@@ -288,8 +289,9 @@
                 <span class=subheader>Manual input instructions</span>
                 <ul>
                     <li> Each column in the table below represents one position, and each cell in the column (except for the first) represents one amino acid at that position.
-                    <li> The "Add Column" button will add a new column to the right.
-                    <li> The "Delete Column" button will delete the right-most column.  All data in the column will be lost when you hit this button, so be careful.
+                    <li> The "Add Position" button will add a new column to the right.
+                    <li> The "Delete Position" button will delete the right-most column.  All data in the column will be lost when you hit this button, so be careful.
+		    <li> Columns may be dragged left or right by dragging on the word "Drag" at the top of the column.
                     <li> You must provide a label for each column in the "Res" row.  This is for output purposes and any label will do (e.g. 208).
                     <li> Positive integers should be given in the table for amino acids that you want to appear.
                     <li> Negative integers can be given for amino acids you want to penalize (but not forbid).
@@ -298,16 +300,27 @@
                     <li> Empty cells will be treated as if they contain a "0" (except for the "Res" row).
                     <li> Any ill-formatted cell on this page will be highlighted in pink.
                     <li> An upper bound on the library size must be given.  This can be given in scientific notation (e.g. 1e7).
-                    <li> STOP values should be negative (positive values would favor stop codons at the given position).
                 </ul>
+                <span class=subheader>Multiple degenerate codon instructions</span>
+		<ul>
+		    <li> Activate the multiple-degenerate-codon algorithm by clicking on the "Allow Mult. Deg. Codons" button below.
+		         This will add two rows to the table.
+		    <li> The user must define primer boundaries in the "Primer Boundary" row.
+		    <li> Indicate the first residue in a primer with the "|" symbol.
+		    <li> Indicate that a residue belongs in the same primer as the previous residue with the "-" symbol.
+		    <li> The maximum number of degenerate codons ("Max DCs") to consider at each position should be either 1 or 2.
+		    <li> The maximum number of extra degenerate codons must be given below the table.  If you have four primers
+		         and set the maximum number of extra degenerate codons to be two, then the algorithm will choose which
+                         two primers to allow extra degenerate codons at.
+		</ul>
                 <span class=subheader>Saving Data</span>
                     <p>
-                    To save the data you have entered in the table below for future sessions, switch to the Text view using
-                    the radio button.  This will display your data in a "comma separated value" (CSV) format.  Copy your data
+                    To save the data you have entered in the table below for future sessions, switch to the "CSV Input" tab.
+                    This will display your data in a "comma separated value" (CSV) format.  Copy your data
                     out of the text box that appears and put it in a document for later use.  You may load data into the table
                     by pasting the data from a previously-saved table and clicking on the "Update Table" button (which is
-                    only visible in the Text view).  If you get an error message saying that it found 42 columns instead of
-                    21, make sure you clear out the text window before you paste your data in it.
+                    only visible in the "CSV Input" tab).  If you get an error message saying that it found 46 columns instead of
+                    23, make sure you clear out the text window before you paste your data in it.		    
                     </p>
             </div>
             <div id=global_settings>
@@ -327,7 +340,7 @@
 
                 <div>
                     <label for=stop_codon_penalty>Universal stop codon penalty:</label>
-                    <input id=stop_codon_penalty title="Optional field. Stop codon penalty applied at all positions; overrides penalties given in the table" type=text size=8>
+                    <input id=stop_codon_penalty title='Optional field. Stop codon penalty applied at all positions; overrides penalties given in the table.  Must be either empty, an integer, or an exclamation mark ("!").' type=text size=8>
                 </div>
 		<div id=max_extra_dcs_input>
 		    <label for=max_extra_primers>Maximum extra degenerate codons:</label>

@@ -30,7 +30,9 @@ function max_dcs_per_pos_valid( cell_val ) {
     return cell_val === "1" || cell_val === "2";
 }
 
-function stop_codon_penalty_valid( cell_val ) { return cell_val === "" || val_is_integer( cell_val ); }
+function stop_codon_penalty_valid( cell_val ) {
+    return cell_val === "" || cell_val === "!" || val_is_integer( cell_val );
+}
 
 function libsize_upper_valid( cell_val ) { return val_is_number( cell_val ); }
 
@@ -166,7 +168,7 @@ function tims_problem() {
     return csv_string;
 }
 
-function load_library_from_table( library, scp_int, max_dcs ) {
+function load_library_from_table( library, scp_value, max_dcs ) {
     // turn the user-provided input into a CSV string
     var rows = [];
     var trs = $('#aacounts tbody').find('tr');
@@ -184,8 +186,13 @@ function load_library_from_table( library, scp_int, max_dcs ) {
             } else {
                 var jval = strip_whitespace( $($(tds[j]).find("input")[0]).val() );
                 if ( i === 1 ) {
-                    if ( allow_mdcs ) { jcontents = jval; }
-                    else { jcontents = "-"; }
+                    if ( allow_mdcs ) {
+                        if ( j === 1 ) {
+                            jcontents = "|"; // first position is always a primer boundary
+                        } else {
+                            jcontents = jval;
+                        }
+                    } else { jcontents = "-"; }
                 } else if ( i === 2 ) {
                     if ( allow_mdcs ) { jcontents = jval; }
                     else { jcontents = "1"; }
@@ -193,7 +200,7 @@ function load_library_from_table( library, scp_int, max_dcs ) {
                     // the amino-acid rows
                     jcontents = jval;
                     if ( i !== 0 && jcontents === "" ) { jcontents = "0"; }
-                    if ( i === 23 && scp_int !== 0 ) { jcontents = scp_int.toString(); }
+                    if ( i === 23 && scp_value !== "" ) { jcontents = scp_value; }
                 }
             }
             icols.push( jcontents );
@@ -237,10 +244,11 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
         var table_i = [];
         var error_trace = library.traceback_mdcs_from_nextra_and_error( error_list[i][0], error_list[i][1] );
         var i_data = report_output_library_data( library, error_trace, diversity_cap );
-        var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td>" +
+        var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td><td># Extra DCs</td>" +
                          "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td></tr><tr><td>",
                          (i+1).toString(), "</td><td>",
-                         error_list[i].toString(), "</td><td>",
+                         error_list[i][1].toString(), "</td><td>",
+                         error_list[i][0].toString(), "</td><td>",
                          i_data.dna_diversity.toExponential(3), "</td><td>",
                          i_data.aa_diversity.toExponential(3), "</td></tr></table><br>" ];
         var table = [];
@@ -582,28 +590,29 @@ function validate_inputs_and_launch( launch_button ) {
     }
 
     // always consider the stop codon penalty to represent a negative number
-    var scp_int = -1 * Math.abs( parseInt( $(scp).val() ) );
-    if ( scp_int !== scp_int ) {
-        scp_int = 0;
+    var scp_val = $(scp).val();
+    if ( scp_val !== "!" && scp_val !== "" ) {
+        var scp_int = -1 * Math.abs( parseInt( $(scp).val() ) );
+        scp_val = scp_int.toString();
     }
 
-
     //disable inputs while working
-    // APL TEMP $(launch_button).button("option","disabled", true);
-    // APL TEMP $(launch_button).button( "option", "label", "Working..." );
+    $(launch_button).button("option","disabled", true);
+    $(launch_button).button( "option", "label", "Working..." );
+    $('#resultdiv').html("");
 
     // do the actual computation after we've updated the DOM.
     setTimeout( function () {
         var starttime = new Date().getTime();
         var library = AALibrary();
-        load_library_from_table( library, scp_int, max_extra_primers_val );
+        load_library_from_table( library, scp_val, max_extra_primers_val );
         library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
         if ( verify_solution_exists( library )) {
             library.optimize_library_multiple_dcs();
             if ( libsize_lower_val != libsize_lower_val ) {
                 var error_list = [ library.find_minimal_error_beneath_diversity_cap_mdcs( libsize_upper_val ) ];
             } else {
-                var error_list = library.errors_in_diversity_range( libsize_upper_val, libsize_lower_val );
+                var error_list = library.errors_and_ndcs_in_diversity_range( libsize_upper_val, libsize_lower_val );
                 console.log( "Error list: ", error_list.join(",") );
             }
             var stoptime = new Date().getTime();

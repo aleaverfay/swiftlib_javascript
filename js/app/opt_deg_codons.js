@@ -719,7 +719,7 @@ function AALibrary() {
             }
         }
 
-        if ( all_ok_solo ) return pos_w_no_viable_solutions;
+        if ( all_ok_solo ) return no_viable_solution_for_pos;
 
         // otherwise, we have to make sure that
         // 1. all positions have a solution even if they require more than 1 DC
@@ -922,6 +922,7 @@ function AALibrary() {
                     var kk_best_libsize = this.infinity;
                     var kk_best_ii_error = this.infinity;
                     var kk_best_ii_nprimers = this.infinity;
+                    var kk_best_last_mdc_primer_rep = this.infinity;
                     var ll_limit = Math.min( this.max_dcs_for_pos[ii], jj+1 );
                     for ( var ll=0; ll < ll_limit; ++ll ) {
                         // ll: the number of degenerate codons - 1 from position ii
@@ -949,6 +950,11 @@ function AALibrary() {
                                 kk_best_libsize = divsum;
                                 kk_best_ii_error = mmerror;
                                 kk_best_ii_nprimers = ll;
+                                if ( ll === 0 ) {
+                                    kk_best_last_mdc_primer_rep = jj_last_mdc_primer_rep[ iprev_error ];
+                                } else {
+                                    kk_best_last_mdc_primer_rep = ii_primer_rep;
+                                }
                             }
                         } // end mm loop -- the error contribued by ii given ll degenerate codons are coming from ii
                     } // end ll loop -- the number of degenerate codons coming from ii
@@ -956,9 +962,7 @@ function AALibrary() {
                     if ( kk_best_libsize !== this.infinity ) {
                         // we have a winner!
                         this.dp_divmin_for_error_mdcs[ii][jj][kk] = kk_best_libsize;
-                        if ( kk_best_ii_nprimers !== 0 ) {
-                            this.dp_last_mdc_primer_rep[ii][jj][kk] = ii_primer_rep;
-                        }
+                        this.dp_last_mdc_primer_rep[ii][jj][kk] = kk_best_last_mdc_primer_rep;
                         this.dp_traceback_mdcs[ii][jj][kk] = [ kk_best_ii_nprimers, kk_best_ii_error, kk - kk_best_ii_error ];
                     }
 
@@ -996,6 +1000,24 @@ function AALibrary() {
         console.log( "Smallest error of " + best_error + " requires " + best_nextra + " extra degenerate codons" );
         return [ best_nextra, best_error ];
     };
+
+    library.errors_and_ndcs_in_diversity_range = function( diversity_upper_bound, diversity_lower_bound ) {
+        var errors_and_ndcs_in_range = [];
+        var log_ub = Math.log( diversity_upper_bound );
+        var log_lb = Math.log( diversity_lower_bound );
+        for ( var ii = 0; ii <= this.max_extra_primers; ++ii ) {
+            var ii_divmins = this.dp_divmin_for_error_mdcs[this.n_positions-1][ii];
+            for ( var jj = 0; jj <= this.error_span; ++jj ) {
+                if ( ! ii_divmins.hasOwnProperty(jj) ) continue;
+                var jjdiv = ii_divmins[jj];
+                if ( jjdiv <= log_ub && jjdiv >= log_lb ) {
+                    errors_and_ndcs_in_range.push( [ii,jj] );
+                }
+            }
+        }
+        errors_and_ndcs_in_range.sort( function(a,b){return a[1]-b[1];} );
+        return errors_and_ndcs_in_range;
+    }
 
     library.find_smallest_diversity = function () {
         var smallest_diversity = this.infinity;
