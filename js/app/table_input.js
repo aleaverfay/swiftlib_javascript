@@ -360,7 +360,8 @@ function populate_table_from_fasta () {
     }
 
     //initialize table array, set defaults for table positions not definable in the FASTA format
-    var seq_length = fasta_contents[0].substr(fasta_contents[0].indexOf('\n')+1).trim().split('').length;
+    var seq_length = fasta_contents[0].substr(fasta_contents[0].indexOf('\n')+1).
+        trim().replace(/\r?\n|\r| /g,"").split('').length;
     var table_contents = [];
     for( var i=0; i < 24; ++i) {
         table_contents[i] = [];
@@ -375,7 +376,7 @@ function populate_table_from_fasta () {
     }
 
     for( var i=0; i < nsequences; ++i ) {
-        var cur_seq = fasta_contents[i].substr(fasta_contents[i].indexOf('\n')+1).trim().split('');
+        var cur_seq = fasta_contents[i].substr(fasta_contents[i].indexOf('\n')+1).trim().replace(/\r?\n|\r| /g,"").split('');
         console.log(cur_seq);
         var cur_length = cur_seq.length;
         if(cur_length != seq_length) {

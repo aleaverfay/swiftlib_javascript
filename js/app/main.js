@@ -14,7 +14,7 @@ $(document).ready(function () {
 	});
 
 	//Add themable tooltips
-	$( document ).tooltip();
+	$( document ).tooltip( { position: { my: "left+15 center", at: "right center" } } );
 
 	//And themable buttons
 	$( "input[type=submit], button" ).button();

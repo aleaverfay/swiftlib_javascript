@@ -31,14 +31,14 @@ label {
 	font-weight: bold;
 }
 
-/*not working the way I want yet. Long text not word wrapped
-.hscroll {
-	white-space: pre-wrap;
-	word-wrap: break-word;
-	overflow: auto;
-	white-space: nowrap;
+#tabs {
+    display: table;
+    width: 99.7%;
 }
-*/
+#manual_tab {
+    white-space: nowrap;
+    display: inline-block;
+}
 
 .table_input {
 	display: inline-block;
@@ -50,6 +50,7 @@ label {
 	padding-left: 20px;
 	/*vertical-align: top;*/
 	width: 800px;
+    white-space: normal;
 }
 
 .result_table {
