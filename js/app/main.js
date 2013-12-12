@@ -42,5 +42,6 @@ $(document).ready(function () {
 	update_table_validation_rules();
 
 	$("#table_from_fasta").click( populate_table_from_fasta );
+	$("#table_from_msf").click( populate_table_from_msf );
 });
 
