@@ -705,6 +705,20 @@ function AALibrary() {
         }
     }
 
+    library.find_position_w_no_available_codons = function() {
+        var no_viable_solution_for_pos = newFilledArray( this.n_positions, false );
+        var all_ok_solo = true;
+        var ok_solo = [];
+        for ( var ii=0; ii < this.n_positions; ++ii ) {
+            if ( this.errors_for_n_dcs_for_position_sparse[ii][0].length === 0 ) {
+                ok_solo[ii] = false;
+                all_ok_solo = false;
+            } else {
+                ok_solo[ii] = true;
+            }
+        }
+        
+
     library.find_positions_wo_viable_solutions = function() {
         var no_viable_solution_for_pos = newFilledArray( this.n_positions, false );
 
@@ -719,7 +733,7 @@ function AALibrary() {
             }
         }
 
-        if ( all_ok_solo ) return no_viable_solution_for_pos;
+        if ( ! all_ok_solo ) return no_viable_solution_for_pos;
 
         // otherwise, we have to make sure that
         // 1. all positions have a solution even if they require more than 1 DC
@@ -1055,6 +1069,26 @@ function AALibrary() {
     };
 
     return library;
+}
+
+function AALibraryMDC() {
+    var library = AALibrary();
+
+    library.enumerate_aas_for_all_degenerate_codons();
+
+    library.optimize = function() {
+        var that = this;
+        function codon_inds_from_useful_codon_lex( position, useful_codon_lex ) {
+            var inds = [];
+            for ( var i=0; i < useful_codon_lex.pos.length; ++i ) {
+                inds[i] = that.useful_codons[ position ][ useful_codon_lex.pos[i] ];
+            }
+            return inds;
+        }
+
+        this.enumerate_aas_for_all_degenerate_codons();
+    };
+
 }
 
 function record_codon_data( position, codon_inds, library ) {
