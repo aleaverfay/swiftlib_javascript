@@ -687,6 +687,7 @@ function AALibrary() {
     }
 
 
+    /*
     library.compute_smallest_diversity_for_all_errors = function () {
         this.divmin_for_error = [];
         this.codon_for_error = [];
@@ -727,6 +728,7 @@ function AALibrary() {
             this.errors_for_position[i].sort( function(a,b){return a-b} );
         }
     }
+    */
 
     library.find_positions_wo_viable_solutions = function() {
         var no_viable_solution_for_pos = newFilledArray( this.n_positions, false );
@@ -799,7 +801,7 @@ function AALibrary() {
         return no_viable_solution_for_pos;
     }
 
-
+    /*
     library.optimize_library = function() {
 
         //Run a dynamic programming algorithm to determine the minimum diversity for
@@ -883,8 +885,11 @@ function AALibrary() {
         //        print "Error of",i,"requires diversity of %5.3f" % this.dp_divmin_for_error[-1][i]
 
         for ( var i=0; i <= this.error_span; ++i ) {
-            if ( this.dp_divmin_for_error[ this.n_positions-1 ][i] != this.infinity && this.dp_divmin_for_error[ this.n_positions-1 ][i] < log_diversity_cap ) {
-                return i;
+            if ( this.dp_divmin_for_error[ this.n_positions-1 ].hasOwnProperty( i ) ) {
+                console.log( "find_minimal_error " + i.toString() + " " + this.dp_divmin_for_error[ this.n_positions-1 ][i].toString() );
+                if ( this.dp_divmin_for_error[ this.n_positions-1 ][i] != this.infinity && this.dp_divmin_for_error[ this.n_positions-1 ][i] < log_diversity_cap ) {
+                    return i;
+                }
             }
         }
     };
@@ -912,6 +917,7 @@ function AALibrary() {
 
         return error_traceback;
     };
+    */
 
     library.optimize_library_multiple_dcs = function() {
         this.error_span = this.max_per_position_error * this.n_positions;

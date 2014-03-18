@@ -156,7 +156,7 @@ test( "DegenerateCodon tests", function() {
     });
 
 
-test( "AALibrary unit tests", function() {
+test( "AALibrary optimize library (multiple-degenerate codons)", function() {
 
 	var csv_contents =
 	    "aa/pos ,268,269,270,271\n" +
@@ -225,12 +225,70 @@ test( "AALibrary unit tests", function() {
 
 	console.log( "  library.optimize_library_multiple_dcs();" );
 	library.optimize_library_multiple_dcs();
-	console.log( "  library.traceback_mdcs( 3.2e8 );" );
-	var error_traceback = library.traceback_mdcs( 3.2e8 );
+	console.log( "  library.traceback_mdcs( 3.2e4 );" );
+	var error_traceback = library.traceback_mdcs( 3.2e4 );
 	console.log( "  report_output_library_data( library, error_traceback );" );
 	var old = report_output_library_data( library, error_traceback );
-	console.log( "First four residues of Tim's problem, traceback dna diversity " + old.dna_diversity.toString() );
-	ok( Math.abs( 41472 - old.dna_diversity ) < 1, "Ensure correct diversity of optimal solution is given" );
+	console.log( "First four residues of Tim's problem, traceback dna diversity MDC " + old.dna_diversity.toString() );
+	ok( Math.abs( 31104 - old.dna_diversity ) < 1, "Ensure correct diversity of optimal solution is given" );
+    });
+
+test( "AALibrary optimize library (classic)", function() {
+
+	var csv_contents =
+	    "aa/pos ,268,269,270,271\n" +
+	    "primer,|,-,-,-\n" +
+	    "max dcs,1,1,1,1\n" +
+	    "A,3,8,1,81\n" +
+	    "C,0,0,0,0\n" +
+	    "D,8,5,0,0\n" +
+	    "E,23,7,0,0\n" +
+	    "F,0,0,0,0\n" +
+	    "G,0,0,0,1\n" +
+	    "H,1,0,0,0\n" +
+	    "I,10,2,98,0\n" +
+	    "K,22,0,0,0\n" +
+	    "L,17,8,5,0\n" +
+	    "M,13,9,5,0\n" +
+	    "N,6,4,0,0\n" +
+	    "P,0,0,0,0\n" +
+	    "Q,42,2,0,0\n" +
+	    "R,35,4,0,0\n" +
+	    "S,7,44,8,113\n" +
+	    "T,6,58,23,4\n" +
+	    "V,7,49,60,1\n" +
+	    "W,0,0,0,0\n" +
+	    "Y,0,0,0,0\n";
+	    "STOP,0,0,0,0\n";
+
+	var library = AALibrary();
+	console.log( "  library.load_library( csv_contents );" )
+	library.load_library( csv_contents );
+	ok( library.n_positions === 4, "library.n_positions === 4" );
+	ok( library.aa_counts[ 1 ][ 14 ] === 4, "Arginine at position 2 aa_counts === 4" );
+	ok( library.required[ 1 ][ 14 ]  === false, "Arginine at position 2 required === false" );
+	ok( library.forbidden[ 1 ][ 14 ] === false, "Arginine at position 2 forbidden === false" );
+	ok( library.orig_pos[ 1 ] === "269", "Original residue id for position 2 === 330" );
+	ok( library.primer_reps[ 1 ] === 0, "Primer representative for position 2 === position 1" );
+
+	console.log( "  library.enumerate_aas_for_all_degenerate_codons();" );
+	library.enumerate_aas_for_all_degenerate_codons();
+
+	ok( library.hasOwnProperty( "aas_for_dc" ), "AALibrary should have aas_for_dc after enumerate_aas_for_all_degenerate_codons" );
+	console.log( "  library.find_useful_codons();" );
+	library.find_useful_codons();
+
+	console.log( "  library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();" );
+	library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
+
+	console.log( "  library.optimize_library_multiple_dcs();" );
+	library.optimize_library_multiple_dcs();
+	console.log( "  library.traceback_mdcs( 3.2e4 );" );
+	var error_traceback = library.traceback_mdcs( 3.2e4 );
+	console.log( "  report_output_library_data( library, error_traceback );" );
+	var old = report_output_library_data( library, error_traceback );
+	console.log( "First four residues of Tim's problem, traceback dna diversity, one degenerate codon per position, " + old.dna_diversity.toString() );
+	ok( Math.abs( 27648 - old.dna_diversity ) < 1, "Ensure correct diversity of optimal solution is given" );
     });
 
 test("AALibrary error handling", function() {
@@ -277,6 +335,50 @@ test("AALibrary error handling", function() {
 	var no_solutions = library.find_positions_wo_viable_solutions();
 	console.log( "no solutions: " + no_solutions.toString() );
 	ok( no_solutions[0] === true, "There is no way to require cys, trp, and tyr while forbidding the stop codon" );
+
+	var one_residue_no_problems_csv = "aa/pos,332\n" +
+	    "primer ,|\n" +
+	    "max dcs ,1\n" +
+	    "A,1\n" +
+	    "C,*\n" +
+	    "D,9\n" +
+	    "E,17\n" +
+	    "F,0\n" +
+	    "G,5\n" +
+	    "H,9\n" +
+	    "I,1\n" +
+	    "K,9\n" +
+	    "L,0\n" +
+	    "M,4\n" +
+	    "N,15\n" +
+	    "P,0\n" +
+	    "Q,18\n" +
+	    "R,21\n" +
+	    "S,29\n" +
+	    "T,57\n" +
+	    "V,5\n" +
+	    "W,*\n" +
+	    "Y,*\n" + 
+	    "STOP,0\n";
+
+	var library = AALibrary();
+	library.load_library( one_residue_no_problems_csv );
+	ok( library.n_positions === 1, "library.n_positions === 1" );
+	ok( library.forbidden[0][20] === false,  "STOP codon not forbidden at position 1" );
+	ok( library.required[0][20]  === false, "STOP codon not required at position 1" );
+	ok( library.forbidden[0][1]  === false, "CYS codon not forbidden at position 1" );
+	ok( library.required[0][1]   === true,  "CYS codon required at position 1" );
+	ok( library.forbidden[0][18] === false, "TRP codon not forbidden at position 1" );
+	ok( library.required[0][18]  === true,  "TRP codon required at position 1" );
+	ok( library.forbidden[0][19] === false, "TYR codon not forbidden at position 1" );
+	ok( library.required[0][19]  === true,  "TYR codon required at position 1" );
+	library.enumerate_aas_for_all_degenerate_codons();
+	library.find_useful_codons();
+	library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
+
+	var no_solutions = library.find_positions_wo_viable_solutions();
+	console.log( "no solutions: " + no_solutions.toString() );
+	ok( no_solutions[0] === false, "Allowing the stop codon solves the C/W/Y requirement issue" );
 
 	var two_residue_csv = "aa/pos,332,334\n" +
 	    "primer,|,-\n" +
