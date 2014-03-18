@@ -191,6 +191,8 @@ function LexicographicalIterator( dims ) {
                 }
             }
         }
+        // just in case this is a one-dimensional lexicographical iterator
+        // then we need to set lex.at_end having arrived here
         lex.at_end = true;
         return false;
     }
@@ -344,7 +346,7 @@ function DegenerateCodon()  {
         // Set the state for this degenerate codon using a lex that's iterating over all (2**4-1)**3 = 3375 codon options.
         this.reset();
         for ( var i=0; i < 3; ++i ) {
-            var posi = lex.pos[i]+1; // take "14" to mean "all 4 degenerate codons" and "0" to mean "only A"
+            var posi = lex.pos[i]+1; // take "14" to mean "all 4 degenerate nucleotides" and "0" to mean "only A"
             var sigdig = 8;
             for ( var j=0; j < 4; ++j ) {
                 if ( Math.floor( posi / sigdig ) != 0 ) {
@@ -456,6 +458,7 @@ function AALibrary() {
         for ( var i=0; i < 21; ++i ) {
             var line = lines[ i + 3 ];
             var vals = line.split(",").slice(1);
+            console.log( "vals " + i.toString() + " " + vals.toString() );
             var iiobs = 0;
             for ( var j=0; j < vals.length; ++j ) {
                 var ijval = vals[j];
@@ -532,6 +535,11 @@ function AALibrary() {
 
     library.find_useful_codons = function() {
         var that = this;
+
+        // compute an integer from a set of amino acids (indicated by the boolean array "aas")
+        // where the "useful" aas are those which are either required or whose absence would
+        // contribute to the error.  This integer is used to quickly represent AA sets as an
+        // index in an array.
         function useful_aaind_for_pos( aas, pos ) {
             var aaind = 0;
             for ( var i = 0; i < 21; ++i ) {
@@ -540,8 +548,17 @@ function AALibrary() {
             }
             return aaind;
         }
+
+        // the array of useful degenerate codons for each position; used in the dynamic
+        // programming algorithm later
         this.useful_codons = [];
+
+        // the diversities for the degenerate codons; this is a three-dimensional array
+        // index 0: which position
+        // index 1: what error 
+        // index 2: either 0 (for the codon's diveristy) or 1 (for the codon's index)
         var div_for_codons = []
+
         for ( var i = 0; i < this.n_positions; ++i ) {
             this.useful_codons[i] = [];
             div_for_codons[i] = []
@@ -553,9 +570,15 @@ function AALibrary() {
                 var ijerror = this.error_given_aas_for_pos_ignore_req( j, iaas );
                 if ( ijerror === this.infinity ) continue;
                 var ij_aaind = useful_aaind_for_pos( iaas, j );
+
+                // keep this codon if it's the first codon producing ijerror
+                // OR it's the first codon with the given aa index producing ijerror
+                // OR the diversity for this codon is smaller than the smallest-seen
+                // diversity of any codon producing ijerror with the given aa index.
                 if ( ! div_for_codons[j].hasOwnProperty( ijerror ) ||
                      ! div_for_codons[j][ijerror ].hasOwnProperty( ij_aaind ) ||
                      div_for_codons[j][ijerror][ij_aaind][0] > idiv ) {
+
                     if ( ! div_for_codons[j].hasOwnProperty( ijerror ) ) {
                         div_for_codons[j][ ijerror ] = [];
                     }
@@ -719,6 +742,10 @@ function AALibrary() {
             }
         }
 
+        // we can exit early and indicate that no positions have any problems
+        // if all positions meet the forbidden/required amino acids when considering
+        // only a single degenerate codon at that position; clearly these positions
+        // will also be ok when considering multiple degenerate codons.
         if ( all_ok_solo ) return no_viable_solution_for_pos;
 
         // otherwise, we have to make sure that
