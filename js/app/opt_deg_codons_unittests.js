@@ -2,7 +2,7 @@
 
 test( "hello test", function() {
 	ok( 1 == "1", "Passed!" );
-    }); 
+    });
 
 test( "LexicographicalIterator standard tests", function() {
 	var dims = [ 2, 3, 2 ];
@@ -28,7 +28,7 @@ test( "LexicographicalIterator standard tests", function() {
 	ok( lex.pos[1] === 0, "After first increment, updates highest-indexed position, pos[1] === 0" );
 	ok( lex.pos[2] === 1, "After first increment, updates highest-indexed position, pos[2] === 1" );
 	ok( lex.index() === 1, "Index after first increment is 1" );
-	incremented = lex.increment();	
+	incremented = lex.increment();
 	ok( incremented, "Lex should have incremented properly" );
 	ok( ! lex.at_end, "Lex still not 'at_end'");
 	ok( lex.pos[0] === 0, "After second increment, updates highest-indexed position, pos[0] === 0" );
@@ -220,17 +220,69 @@ test( "AALibrary optimize library (multiple-degenerate codons)", function() {
 	ok( library.useful_codons[ 2 ].length === 58 , "Verifying the gold-standard number of useful codons" );
 	ok( library.useful_codons[ 3 ].length === 25 , "Verifying the gold-standard number of useful codons" );
 
-	console.log( "  library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();" );
-	library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
+	console.log( "  library.compute_smallest_diversity_for_all_errors();" );
+	library.compute_smallest_diversity_for_all_errors();
 
 	console.log( "  library.optimize_library_multiple_dcs();" );
 	library.optimize_library_multiple_dcs();
-	console.log( "  library.traceback_mdcs( 3.2e4 );" );
-	var error_traceback = library.traceback_mdcs( 3.2e4 );
+	console.log( "  library.traceback( 3.2e4 );" );
+	var error_traceback = library.traceback( 3.2e4 );
 	console.log( "  report_output_library_data( library, error_traceback );" );
 	var old = report_output_library_data( library, error_traceback );
 	console.log( "First four residues of Tim's problem, traceback dna diversity MDC " + old.dna_diversity.toString() );
 	ok( Math.abs( 31104 - old.dna_diversity ) < 1, "Ensure correct diversity of optimal solution is given" );
+
+	var smallest_div = library.find_smallest_diversity();
+	console.log( "   smallest diversity: " + smallest_div.toString() );
+	ok( Math.abs( smallest_div - 0 ) < 1, "Smallest diversity should be 0" );
+
+	var errors_and_ndcs_in_range = library.errors_and_ndcs_in_diversity_range( 4e4, 1e4 );
+	for ( var i = 0; i < errors_and_ndcs_in_range.length; ++i ) {
+	    console.log( "errors_and_ndcs_in_range " + i.toString() + " " + errors_and_ndcs_in_range[i][0].toString() + ", " +
+			 errors_and_ndcs_in_range[i][1].toString() );
+	}
+	ok( errors_and_ndcs_in_range.length === 19 );
+
+	ok( errors_and_ndcs_in_range[0][0] === 1, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[1][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[2][0] === 1, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[3][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[4][0] === 1, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[5][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[6][0] === 1, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[7][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[8][0] === 1, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[9][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[10][0] === 1, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[11][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[12][0] === 1, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[13][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[14][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[15][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[16][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[17][0] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[18][0] === 0, "gold standard errors/ndcs" );
+
+	ok( errors_and_ndcs_in_range[0][1] === 0, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[1][1] === 1, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[2][1] === 1, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[3][1] === 2, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[4][1] === 2, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[5][1] === 3, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[6][1] === 3, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[7][1] === 4, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[8][1] === 4, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[9][1] === 5, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[10][1] === 5, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[11][1] === 6, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[12][1] === 6, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[13][1] === 7, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[14][1] === 8, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[15][1] === 9, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[16][1] === 10, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[17][1] === 12, "gold standard errors/ndcs" );
+	ok( errors_and_ndcs_in_range[18][1] === 14, "gold standard errors/ndcs" );
+
     });
 
 test( "AALibrary optimize library (classic)", function() {
@@ -278,13 +330,13 @@ test( "AALibrary optimize library (classic)", function() {
 	console.log( "  library.find_useful_codons();" );
 	library.find_useful_codons();
 
-	console.log( "  library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();" );
-	library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
+	console.log( "  library.compute_smallest_diversity_for_all_errors();" );
+	library.compute_smallest_diversity_for_all_errors();
 
 	console.log( "  library.optimize_library_multiple_dcs();" );
 	library.optimize_library_multiple_dcs();
-	console.log( "  library.traceback_mdcs( 3.2e4 );" );
-	var error_traceback = library.traceback_mdcs( 3.2e4 );
+	console.log( "  library.traceback( 3.2e4 );" );
+	var error_traceback = library.traceback( 3.2e4 );
 	console.log( "  report_output_library_data( library, error_traceback );" );
 	var old = report_output_library_data( library, error_traceback );
 	console.log( "First four residues of Tim's problem, traceback dna diversity, one degenerate codon per position, " + old.dna_diversity.toString() );
@@ -314,7 +366,7 @@ test("AALibrary error handling", function() {
 	    "T,57\n" +
 	    "V,5\n" +
 	    "W,*\n" +
-	    "Y,*\n" + 
+	    "Y,*\n" +
 	    "STOP,!\n";
 
 	var library = AALibrary();
@@ -330,7 +382,7 @@ test("AALibrary error handling", function() {
 	ok( library.required[0][19]  === true,  "TYR codon required at position 1" );
 	library.enumerate_aas_for_all_degenerate_codons();
 	library.find_useful_codons();
-	library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
+	library.compute_smallest_diversity_for_all_errors();
 
 	var no_solutions = library.find_positions_wo_viable_solutions();
 	console.log( "no solutions: " + no_solutions.toString() );
@@ -358,7 +410,7 @@ test("AALibrary error handling", function() {
 	    "T,57\n" +
 	    "V,5\n" +
 	    "W,*\n" +
-	    "Y,*\n" + 
+	    "Y,*\n" +
 	    "STOP,0\n";
 
 	var library = AALibrary();
@@ -374,7 +426,7 @@ test("AALibrary error handling", function() {
 	ok( library.required[0][19]  === true,  "TYR codon required at position 1" );
 	library.enumerate_aas_for_all_degenerate_codons();
 	library.find_useful_codons();
-	library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
+	library.compute_smallest_diversity_for_all_errors();
 
 	var no_solutions = library.find_positions_wo_viable_solutions();
 	console.log( "no solutions: " + no_solutions.toString() );
@@ -402,7 +454,7 @@ test("AALibrary error handling", function() {
 	    "T,5,57\n" +
 	    "V,5,5\n" +
 	    "W,*,*\n" +
-	    "Y,*,*\n" + 
+	    "Y,*,*\n" +
 	    "STOP,!,!\n";
 
 	var library = AALibrary();
@@ -429,7 +481,7 @@ test("AALibrary error handling", function() {
 
 	library.enumerate_aas_for_all_degenerate_codons();
 	library.find_useful_codons();
-	library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
+	library.compute_smallest_diversity_for_all_errors();
 
 	var no_solutions = library.find_positions_wo_viable_solutions();
 	console.log( "no solutions: " + no_solutions.toString() );

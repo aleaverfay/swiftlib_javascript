@@ -598,6 +598,7 @@ function AALibrary() {
         }
     };
 
+    /*
     library.report_useful_codon_fraction = function() {
         // library.find_useful_codons must have been called first!
         var dc = DegenerateCodon();
@@ -616,8 +617,9 @@ function AALibrary() {
             console.log( "Useful codons: " +  codons.join(", ") );
         }
     };
+    */
 
-    library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse = function() {
+    library.compute_smallest_diversity_for_all_errors = function() {
         var that = this;
         function codon_inds_from_useful_codon_lex( position, useful_codon_lex  ) {
             var inds = [];
@@ -921,26 +923,26 @@ function AALibrary() {
 
     library.optimize_library_multiple_dcs = function() {
         this.error_span = this.max_per_position_error * this.n_positions;
-        this.dp_divmin_for_error_mdcs = [];
+        this.dp_divmin_for_error = [];
         this.dp_last_mdc_primer_rep = [];
-        this.dp_traceback_mdcs = [];
+        this.dp_traceback = [];
         for ( var i=0; i < this.n_positions; ++i ) {
-            this.dp_divmin_for_error_mdcs[i] = [];
+            this.dp_divmin_for_error[i] = [];
             this.dp_last_mdc_primer_rep[i] = [];
-            this.dp_traceback_mdcs[i] = [];
+            this.dp_traceback[i] = [];
             for ( var j=0; j <= this.max_extra_primers; ++j ) {
-                this.dp_divmin_for_error_mdcs[i][j] = [];
+                this.dp_divmin_for_error[i][j] = [];
                 this.dp_last_mdc_primer_rep[i][j] = [];
-                this.dp_traceback_mdcs[i][j] = [];
+                this.dp_traceback[i][j] = [];
             }
         }
-        // take care of position 0: copy this.divmin_for_error_for_n_dcs_sparse[0] into this.dp_divmin_for_error_mdcs
+        // take care of position 0: copy this.divmin_for_error_for_n_dcs_sparse[0] into this.dp_divmin_for_error
         for ( var i=0; i < Math.min( this.max_extra_primers+1, this.max_dcs_for_pos[0] ); ++i ) {
             for ( var j=0; j <= this.max_per_position_error; ++j ) {
                 if ( this.divmin_for_error_for_n_dcs_sparse[0][i][j] !== this.infinity ) {
-                    this.dp_divmin_for_error_mdcs[0][i][j] = this.divmin_for_error_for_n_dcs_sparse[0][i][j];
+                    this.dp_divmin_for_error[0][i][j] = this.divmin_for_error_for_n_dcs_sparse[0][i][j];
                     this.dp_last_mdc_primer_rep[0][i][j]   = this.primer_reps[0];
-                    this.dp_traceback_mdcs[0][i][j]        = [ i, j, 0 ];
+                    this.dp_traceback[0][i][j]        = [ i, j, 0 ];
                 }
             }
         }
@@ -960,7 +962,7 @@ function AALibrary() {
                     for ( var ll=0; ll < ll_limit; ++ll ) {
                         // ll: the number of degenerate codons - 1 from position ii
                         var ll_divmin = this.divmin_for_error_for_n_dcs_sparse[ii][ll];
-                        var jj_dp_divmin = this.dp_divmin_for_error_mdcs[ii-1][jj-ll];
+                        var jj_dp_divmin = this.dp_divmin_for_error[ii-1][jj-ll];
                         var jj_last_mdc_primer_rep = this.dp_last_mdc_primer_rep[ii-1][jj-ll];
 
                         var iill_errors = this.errors_for_n_dcs_for_position_sparse[ii][ll];
@@ -994,9 +996,9 @@ function AALibrary() {
 
                     if ( kk_best_libsize !== this.infinity ) {
                         // we have a winner!
-                        this.dp_divmin_for_error_mdcs[ii][jj][kk] = kk_best_libsize;
+                        this.dp_divmin_for_error[ii][jj][kk] = kk_best_libsize;
                         this.dp_last_mdc_primer_rep[ii][jj][kk] = kk_best_last_mdc_primer_rep;
-                        this.dp_traceback_mdcs[ii][jj][kk] = [ kk_best_ii_nprimers, kk_best_ii_error, kk - kk_best_ii_error ];
+                        this.dp_traceback[ii][jj][kk] = [ kk_best_ii_nprimers, kk_best_ii_error, kk - kk_best_ii_error ];
                     }
 
                 } // end kk loop -- the target amount of error
@@ -1004,17 +1006,17 @@ function AALibrary() {
         } // end  ii loop -- position from
     };
 
-    library.traceback_mdcs = function( diversity_cap ) {
-        var best = this.find_minimal_error_beneath_diversity_cap_mdcs( diversity_cap );
-        return this.traceback_mdcs_from_nextra_and_error( best[0], best[1] );
+    library.traceback = function( diversity_cap ) {
+        var best = this.find_minimal_error_beneath_diversity_cap( diversity_cap );
+        return this.traceback_from_nextra_and_error( best[0], best[1] );
     };
 
-    library.find_minimal_error_beneath_diversity_cap_mdcs = function ( diversity_cap ) {
+    library.find_minimal_error_beneath_diversity_cap = function ( diversity_cap ) {
         var log_diversity_cap =  Math.log( diversity_cap );
         var best_error = this.infinity;
         var best_nextra = this.infinity;
         for ( var ii=0; ii <= this.max_extra_primers; ++ii ) {
-            var ii_dp_divmin = this.dp_divmin_for_error_mdcs[ this.n_positions-1 ][ ii ];
+            var ii_dp_divmin = this.dp_divmin_for_error[ this.n_positions-1 ][ ii ];
             var iibest = this.infinity;
             for ( var jj=0; jj <= this.error_span; ++jj ) {
                 if ( ! ii_dp_divmin.hasOwnProperty( jj ) ) continue;
@@ -1039,11 +1041,13 @@ function AALibrary() {
         var log_ub = Math.log( diversity_upper_bound );
         var log_lb = Math.log( diversity_lower_bound );
         for ( var ii = 0; ii <= this.max_extra_primers; ++ii ) {
-            var ii_divmins = this.dp_divmin_for_error_mdcs[this.n_positions-1][ii];
+            var ii_divmins = this.dp_divmin_for_error[this.n_positions-1][ii];
             for ( var jj = 0; jj <= this.error_span; ++jj ) {
                 if ( ! ii_divmins.hasOwnProperty(jj) ) continue;
                 var jjdiv = ii_divmins[jj];
                 if ( jjdiv <= log_ub && jjdiv >= log_lb ) {
+                    // actually pushes back a pair / array, with the first element being
+                    // the number of extra oligos used and second being the error level
                     errors_and_ndcs_in_range.push( [ii,jj] );
                 }
             }
@@ -1055,7 +1059,7 @@ function AALibrary() {
     library.find_smallest_diversity = function () {
         var smallest_diversity = this.infinity;
         for ( var ii = 0; ii <= this.max_extra_primers; ++ii ) {
-            var ii_dp_divmin = this.dp_divmin_for_error_mdcs[ this.n_positions-1 ][ ii ];
+            var ii_dp_divmin = this.dp_divmin_for_error[ this.n_positions-1 ][ ii ];
             for ( var jj = 0; jj <= this.error_span; ++jj ) { 
                 if ( ! ii_dp_divmin.hasOwnProperty( jj ) ) continue;
                 var jjdiv = ii_dp_divmin[jj];
@@ -1067,14 +1071,14 @@ function AALibrary() {
         return smallest_diversity;
     };
 
-    library.traceback_mdcs_from_nextra_and_error = function( nextra, error_level ) {
+    library.traceback_from_nextra_and_error = function( nextra, error_level ) {
         var error_traceback = [];
         for ( var i=0; i < this.n_positions; ++i ) { error_traceback[i] = [ this.infinity, this.infinity ]; }
 
         var position_error = [];
         for ( var i=0; i < this.n_positions; ++i ) { position_error[i] = 0; }
         for ( var i=this.n_positions-1; i >= 0; --i ) {
-            var tb = this.dp_traceback_mdcs[ i ][ nextra ][ error_level ];
+            var tb = this.dp_traceback[ i ][ nextra ][ error_level ];
             error_traceback[i][ 0 ] = tb[ 0 ];
             error_traceback[i][ 1 ] = tb[ 1 ];
             nextra      = nextra - tb[ 0 ];
@@ -1175,6 +1179,7 @@ function report_output_library_data( library, error_sequence ) {
     return output_library_data;
 }
 
+/*
 var library = AALibrary();
 
 function go() {
@@ -1208,7 +1213,7 @@ function go() {
 
     console.log( "enumerating sparse degenerate codon pairs" );
     var starttime = new Date().getTime();
-    library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
+    library.compute_smallest_diversity_for_all_errors();
     var stoptime = new Date().getTime();
     console.log( "enumerating sparse degenerate codon pairs took " + (( stoptime - starttime ) / 1000 )+ " seconds " );
 
@@ -1219,7 +1224,7 @@ function go() {
     var stoptime = new Date().getTime();
     console.log( "running DP considering multiple degenerate codons took " + (( stoptime - starttime ) / 1000 )+ " seconds " );
 
-    var error_traceback = library.traceback_mdcs( Math.log( 3.2e8 ) );
+    var error_traceback = library.traceback( Math.log( 3.2e8 ) );
 
     var old = report_output_library_data( library, error_traceback );
     for ( var ii = 0; ii < library.n_positions; ++ii ) {
@@ -1277,6 +1282,8 @@ function go() {
     //var best = library.optimize_library( diversity_cap );
     //print_output_codons( library, best, diversity_cap );
 }
+
+*/
 
 // Local Variables:
 // js-indent-level: 4
