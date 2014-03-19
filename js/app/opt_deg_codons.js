@@ -918,49 +918,51 @@ function AALibrary() {
                     var kklimit = Math.min( this.max_dcs_for_pos[ii], jj );
                     for ( var kk = 1; kk <= kklimit; ++kk ) {
 
-                        // now consider all possible numbers of degenerate codons that
-                        // could be used at position ii; this is at most kk (I can put a tighter
-                        // bound on this!)
-                        var lllimit = Math.min( this.max_dcs_for_pos[ii], kk );
-                        for ( var ll = 1; ll <= lllimit; ++ll ) {
-                            if ( kk % ll !== 0 ) continue; // e.g. if kk = 5, ll cannot be 2
-                            var llprime = kk / ll; // this is an integer, right?
+                        var kkdpdivmin    = jjdpdivmin[ kk ];
+                        var kkdptraceback = jjdptraceback[ kk ];
 
-                            var lldpdivmin    = jjdpdivmin[ ll ];
-                            var lldptraceback = jjdptraceback[ ll ];
-                            var llerrors      = this.errors_for_n_dcs_for_position[ii][ll];
-                            var lldiversities = this.divmin_for_error_for_ndcs[ii][ll];
+                        /// now consider all possible error values up to position ii
+                        var lllimit = ii * max_per_position_error;
+                        for ( var ll = 0; ll <= lllimit; ++ll ) {
+                            var lldivmin          = this.infinity;
+                            var lldivmin_iierror  = this.infinity;
+                            var lldivmin_iindcs   = this.infinity;
+                            var lldivmin_iim1ndcs = this.infinity;
 
-                            var iim1_ll_dpdivmin = iim1dpdivmin[ jj - (ll-1)*llprime ][ llprime ];
+                            // how can we achieve this error level?
 
-                            // now consider all of the errors that are achievalbe for positions 0..ii
-                            var mmlimit = ii * max_per_position_error;
-                            for ( var mm = 0; mm <= mmlimit; ++mm ) {
-                                var mmdivmin          = this.infinity;
-                                var mmdivmin_iierror  = this.infinity;
-                                var mmdivmin_iindcs   = this.infinity;
-                                var mmdivmin_iim1ndcs = this.infinity;
+                            // now consider all possible numbers of degenerate codons that
+                            // could be used at position ii; this is at most kk
+                            var mmlimit = Math.min( this.max_dcs_for_pos[ii], kk );
+                            for ( var mm = 1; mm <= mmlimit; ++mm ) {
+                                if ( kk % mm !== 0 ) continue; // e.g. if kk = 5, mm cannot be 2
+                                var mmprime = kk / mm; // this is an integer, right?
 
-                                // and look at all the errors possible from position ii when using ll degenerate codons
-                                var nnlimit = llerrors.length;
+                                var mmerrors      = this.errors_for_n_dcs_for_position[ii][mm];
+                                var mmdiversities = this.divmin_for_error_for_ndcs[ii][mm];
+
+                                var iim1_mm_dpdivmin = iim1dpdivmin[ jj - (mm-1)*mmprime ][ llprime ];
+
+                                // and look at all the errors possible from position ii when using mm degenerate codons
+                                var nnlimit = mmerrors.length;
                                 for ( var nn = 0; nn <= nnlimit; ++nn ) {
-                                    var nnerror = llerrors[ nn ];
-                                    var mm_minus_nnerror = mm - nnerror;
-                                    if ( iim1_ll_dpdivmin.hasOwnProperty( mm_minus_nnerror ) ) {
-                                        var nndiv = lldiversities[ nnerror ] + iim1_ll_dpdivmin[ mm_minus_nnerror ];
-                                        if ( mmdivmin === this.infinity || nndiv < mmdivmin ) {
-                                            mmdivmin          = nndiv;
-                                            mmdivmin_iierror  = nnerror;
-                                            mmdivmin_iindcs   = ll;
-                                            mmdivmin_iim1ndcs = jj - (ll-1)*llprime;
+                                    var nnerror = mmerrors[ nn ];
+                                    var ll_minus_nnerror = ll - nnerror;
+                                    if ( iim1_mm_dpdivmin.hasOwnProperty( ll_minus_nnerror ) ) {
+                                        var nndiv = mmdiversities[ nnerror ] + iim1_mm_dpdivmin[ ll_minus_nnerror ];
+                                        if ( lldivmin === this.infinity || nndiv < lldivmin ) {
+                                            lldivmin          = nndiv;
+                                            lldivmin_iierror  = nnerror;
+                                            lldivmin_iindcs   = mm;
+                                            lldivmin_iim1ndcs = jj - (mm-1)*mmprime;
                                         }
                                     }
                                 } // for nn
-                                if ( mmdivmin != this.infinity ) {
-                                    lldpdivmin[    mm ] = mmdivmin;
-                                    lldptraceback[ mm ] = [ mmdivmin_iierror, mmdivmin_iindcs, mmdivmin_iim1ndcs ];
-                                }
                             }// for mm
+                            if ( lldivmin !== this.infinity ) {
+                                kkdpdivmin[    ll ] = lldivmin;
+                                kkdptraceback[ ll ] = [ lldivmin_iierror, lldivmin_iindcs, lldivmin_iim1ndcs ];
+                            }
                         } //for ll
                     } // for kk
                 } // for jj
