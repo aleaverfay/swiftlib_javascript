@@ -860,7 +860,9 @@ function AALibrary() {
                     var kklimit = Math.min( this.max_dcs_for_pos[ii], jj-1 );
                     for ( var kk = 1; kk <= kklimit; ++kk ) {                        
                         var kkdpdivmin    = jjdpdivmin[ kk ];
-                        var kkdptraceback = jjdpdivmin[ kk ];
+                        var kkdptraceback = jjdptraceback[ kk ];
+                        var kkerrors      = this.errors_for_n_dcs_for_position[ii][kk];
+                        var kkdiversities = this.divmin_for_error_for_ndcs[ii][kk];
                         var iim1_jjmkk_dpdivmin    = iim1dpdivmin[ jj-kk ];
 
                         // now consider all of the errors that are achievable for positions 0..ii
@@ -872,9 +874,10 @@ function AALibrary() {
                             var lldivmin_iim1ndcs = this.infinity;
 
                             // now look at all the errors possible from position ii when using kk degenerate codons
-                            for ( var mm = 0; mm <= this.errors_for_n_dcs_for_position[ii][kk].length; ++mm ) {
-                                var mmerror = this.errors_for_n_dcs_for_position[ii][kk][mm];
-                                var mmdiversity = this.divmin_for_error_for_ndcs[ii][kk][mm];
+                            var mmlimit = this.errors_for_n_dcs_for_position[ii][kk].length;
+                            for ( var mm = 0; mm <= mmlimit; ++mm ) {
+                                var mmerror = kkerrors[mm];
+                                var mmdiversity = kkdiversities[mm];
                                 var ll_minus_mmerr = ll - mmerror;
                                 // and look at all the number of primers used from position ii-1
                                 var nnlimit = Math.min( this.max_oligos_total, (count_stretch-1)*this.max_oligos_per_stretch);
@@ -899,13 +902,71 @@ function AALibrary() {
                     } // for kk
                 } // for jj
             } else {
+
                 // iterate across the total number of oligos commited to up to position ii
                 // this can be at most count_stretch * this.max_oligos_per_stretch;
                 var jjlimit = Math.min( this.max_oligos_total, count_stretch * this.max_oligos_per_stretch );
                 for ( var jj = count_stretch; jj <= jjlimit; ++jj ) {
-                    
-            }
-        } // end  ii loop -- position from
+                    var jjdpdivmin    = iidpdivmin[ jj ];
+                    var jjdptraceback = iidptraceback[ jj ];
+
+                    // Iterate over the number of oligos committed to by all of the residues
+                    // from the current stretch; this will place certain restrictions on the
+                    // number of degenerate codons that can be used at position ii.
+                    // This is at most jj (instead of jj-1 in the if block above) since we
+                    // might be using only a single oligo for the positions in this stretch.
+                    var kklimit = Math.min( this.max_dcs_for_pos[ii], jj );
+                    for ( var kk = 1; kk <= kklimit; ++kk ) {
+
+                        // now consider all possible numbers of degenerate codons that
+                        // could be used at position ii; this is at most kk (I can put a tighter
+                        // bound on this!)
+                        var lllimit = Math.min( this.max_dcs_for_pos[ii], kk );
+                        for ( var ll = 1; ll <= lllimit; ++ll ) {
+                            if ( kk % ll !== 0 ) continue; // e.g. if kk = 5, ll cannot be 2
+                            var llprime = kk / ll; // this is an integer, right?
+
+                            var lldpdivmin    = jjdpdivmin[ ll ];
+                            var lldptraceback = jjdptraceback[ ll ];
+                            var llerrors      = this.errors_for_n_dcs_for_position[ii][ll];
+                            var lldiversities = this.divmin_for_error_for_ndcs[ii][ll];
+
+                            var iim1_ll_dpdivmin = iim1dpdivmin[ jj - (ll-1)*llprime ][ llprime ];
+
+                            // now consider all of the errors that are achievalbe for positions 0..ii
+                            var mmlimit = ii * max_per_position_error;
+                            for ( var mm = 0; mm <= mmlimit; ++mm ) {
+                                var mmdivmin          = this.infinity;
+                                var mmdivmin_iierror  = this.infinity;
+                                var mmdivmin_iindcs   = this.infinity;
+                                var mmdivmin_iim1ndcs = this.infinity;
+
+                                // and look at all the errors possible from position ii when using ll degenerate codons
+                                var nnlimit = llerrors.length;
+                                for ( var nn = 0; nn <= nnlimit; ++nn ) {
+                                    var nnerror = llerrors[ nn ];
+                                    var mm_minus_nnerror = mm - nnerror;
+                                    if ( iim1_ll_dpdivmin.hasOwnProperty( mm_minus_nnerror ) ) {
+                                        var nndiv = lldiversities[ nnerror ] + iim1_ll_dpdivmin[ mm_minus_nnerror ];
+                                        if ( mmdivmin === this.infinity || nndiv < mmdivmin ) {
+                                            mmdivmin          = nndiv;
+                                            mmdivmin_iierror  = nnerror;
+                                            mmdivmin_iindcs   = ll;
+                                            mmdivmin_iim1ndcs = jj - (ll-1)*llprime;
+                                        }
+                                    }
+                                } // for nn
+                                if ( mmdivmin != this.infinity ) {
+                                    lldpdivmin[    mm ] = mmdivmin;
+                                    lldptraceback[ mm ] = [ mmdivmin_iierror, mmdivmin_iindcs, mmdivmin_iim1ndcs ];
+                                }
+                            }// for mm
+                        } //for ll
+                    } // for kk
+                } // for jj
+            } // else
+        } // for ii
+
     };
 
     library.traceback = function( diversity_cap ) {
