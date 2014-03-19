@@ -44,7 +44,7 @@ function libsize_lower_valid( libsize_upper, cell_val ) {
     return libsize_lower < libsize_upper;
 }
 
-function max_extra_primers_valid( cell_val ) {
+function max_primer_count_valid( cell_val ) {
     if ( cell_val === "" ) return !($('#primerboundary_row').is(':visible'));
     return val_is_integer( cell_val );
 }
@@ -168,13 +168,14 @@ function tims_problem() {
     return csv_string;
 }
 
-function load_library_from_table( library, scp_value, max_dcs ) {
+function load_library_from_table( library, scp_value, max_primers_total, max_primers_per_stretch ) {
     // turn the user-provided input into a CSV string
     var rows = [];
     var trs = $('#aacounts tbody').find('tr');
     var allow_mdcs = $('#primerboundary_row').is(':visible');
 
-    library.max_extra_primers = allow_mdcs ? max_dcs : 0;
+    library.max_oligos_total = allow_mdcs ? max_primers_total : 0;
+    library.max_oligos_per_stretch = allow_mdcs ? max_primers_per_stretch : 0;
 
     for ( var i=0; i < trs.length; ++i ) {
         var tds = $(trs[i]).find('td');
@@ -766,19 +767,30 @@ function validate_inputs_and_launch( launch_button ) {
         }
     }
 
-    var max_extra_primers = $('#max_extra_primers');
-    if ( ! validate_cell( max_extra_primers, max_extra_primers_valid ) ){
+    var max_primers_total = $('#max_primers_total');
+    if ( ! validate_cell( max_primers_total, max_primer_count_valid ) ){
         any_errors = true;
     }
+
+    var max_primers_per_stretch = $('#max_primers_per_stretch');
+    if ( ! validate_cell( max_primers_per_stretch, max_primer_count_valid ) ) {
+        any_errors = true;
+    }
+
 
     if ( any_errors ) {
         alert( "Errors in inputs" );
         return;
     }
 
-    var max_extra_primers_val = parseInt( $(max_extra_primers).val() );
-    if ( max_extra_primers_val !== max_extra_primers_val ) {
-        max_extra_primers_val = 0;
+    var max_primers_total_val = parseInt( $(max_primers_total).val() );
+    if ( max_primers_total_val !== max_primers_total_val ) {
+        max_primers_total_val = 0;
+    }
+
+    var max_primers_per_stretch_val = parseInt( $(max_primers_per_stretch).val() );
+    if ( max_primers_per_stretch_val !== max_primers_per_stretch_val ) {
+        max_primers_per_stretch_val = 0;
     }
 
     // always consider the stop codon penalty to represent a negative number
@@ -797,7 +809,7 @@ function validate_inputs_and_launch( launch_button ) {
     setTimeout( function () {
         var starttime = new Date().getTime();
         var library = AALibrary();
-        load_library_from_table( library, scp_val, max_extra_primers_val );
+        load_library_from_table( library, scp_val, max_primers_total_val, max_primers_per_stretch );
         library.compute_smallest_diversity_for_all_errors();
         if ( verify_solution_exists( library )) {
             library.optimize_library();

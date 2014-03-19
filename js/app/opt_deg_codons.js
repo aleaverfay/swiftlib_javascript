@@ -973,32 +973,36 @@ function AALibrary() {
 
     library.traceback = function( diversity_cap ) {
         var best = this.find_minimal_error_beneath_diversity_cap( diversity_cap );
-        return this.traceback_from_nextra_and_error( best[0], best[1] );
+        return this.traceback_from_starting_point( best[0], best[1], best[2] );
     };
 
     library.find_minimal_error_beneath_diversity_cap = function ( diversity_cap ) {
-        var log_diversity_cap =  Math.log( diversity_cap );
-        var best_error = this.infinity;
-        var best_nextra = this.infinity;
-        for ( var ii=0; ii <= this.max_oligos_total; ++ii ) {
-            var ii_dp_divmin = this.dp_divmin[ this.n_positions-1 ][ ii ];
-            var iibest = this.infinity;
-            for ( var jj=0; jj <= this.error_span; ++jj ) {
-                if ( ! ii_dp_divmin.hasOwnProperty( jj ) ) continue;
-                var jjdiversity = ii_dp_divmin[jj];
-                if ( jjdiversity > log_diversity_cap ) continue;
-                if ( iibest === this.infinity ) {
-                    console.log( "Best given the use of " + ii + " extra stretchs: error " + jj + " with diversity " + jjdiversity + " vs cap of " + log_diversity_cap );
-                    iibest = jj;
-                }
-                if ( best_error === this.infinity || jj < best_error ) {
-                    best_error = jj;
-                    best_nextra = ii;
+        var log_diversity_cap        =  Math.log( diversity_cap );
+        var best_error               = this.infinity;
+        var best_noligos_total       = this.infinity;
+        var best_noligos_for_stretch = this.infinity;
+
+        for ( var jj=1; jj <= this.max_oligos_total; ++jj ) {
+            var jj_dp_divmin = this.dp_divmin[ this.n_positions-1 ][ jj ];
+
+            for ( var kk = 1; kk <= this.max_oligos_per_stretch; ++kk ) {
+                var kk_dp_divmin = jj_dp_divmin[ kk ];
+                for ( var ll = 0; ll <= this.error_span; ++ll ) {
+                    if ( ! kk_dp_divmin.hasOwnProperty(ll) ) continue;
+                    var lldiversity = kk_dp_divmin[ll];
+                    if ( lldiversity > log_diversity_cap ) continue;
+                    if ( best_error === this.infinity || ll < best_error ) {
+                        best_error = ll;
+                        best_noligos_total = jj;
+                        best_noligos_for_stretch = kk;
+                    }
+                    break; // all other errors are going to be higher for this jj/kk combination
                 }
             }
         }
-        console.log( "Smallest error of " + best_error + " requires " + best_nextra + " extra degenerate codons" );
-        return [ best_nextra, best_error ];
+
+        console.log( "Smallest error of " + best_error + " requires " + best_noligos_total + " oligos total" );
+        return [ best_noligos_total, best_noligos_for_stretch, best_error ];
     };
 
     library.errors_and_ndcs_in_diversity_range = function( diversity_upper_bound, diversity_lower_bound ) {
@@ -1036,19 +1040,28 @@ function AALibrary() {
         return smallest_diversity;
     };
 
-    library.traceback_from_nextra_and_error = function( nextra, error_level ) {
+    library.traceback_from_starting_point = function( noligos_total, noligos_for_stretch, error_level ) {
+        // the error traceback will report for each position:
+        // 0: the number of degenerate codons used
+        // 1: the error produced at this position.
         var error_traceback = [];
         for ( var i=0; i < this.n_positions; ++i ) { error_traceback[i] = [ this.infinity, this.infinity ]; }
 
-        var position_error = [];
-        for ( var i=0; i < this.n_positions; ++i ) { position_error[i] = 0; }
-        for ( var i=this.n_positions-1; i >= 0; --i ) {
-            var tb = this.dp_traceback[ i ][ nextra ][ error_level ];
-            error_traceback[i][ 0 ] = tb[ 0 ];
-            error_traceback[i][ 1 ] = tb[ 1 ];
-            nextra      = nextra - tb[ 0 ];
-            error_level = error_level - tb[ 1 ];
-            position_error[i] = tb[1];
+        //var position_error = [];
+        //for ( var i=0; i < this.n_positions; ++i ) { position_error[i] = 0; }
+
+        var ii_ntotal = noligos_total;
+        var ii_nstretch = noligos_for_stretch;
+        var ii_error = error_level;
+
+        for ( var ii=this.n_positions-1; ii >= 0; --ii ) {
+            var tb = this.dp_traceback[ ii ][ ii_ntotal ][ ii_nstretch ][ ii_error ];
+            error_traceback[i][ 0 ] = tb[ 1 ];
+            error_traceback[i][ 1 ] = tb[ 0 ];
+            ii_ntotal      = ii_ntotal - tb[ 1 ];
+            ii_nstretch    = tb[ 2 ];
+            error_level = error_level - tb[ 0 ];
+            //position_error[i] = tb[0];
         }
         for ( var i=0; i < this.n_positions; ++i ) {
             console.log( "Position " + i + " with error level " + error_traceback[i][1] + " contributing " + error_traceback[i][0] + " degenerate codons " );
@@ -1130,9 +1143,9 @@ function report_output_library_data( library, error_sequence ) {
     output_library_data.positions = [];
     output_library_data.error = 0;
     for ( var ii=0; ii < library.n_positions; ++ii ) {
-        var ii_n_extra_dcs = error_sequence[ ii ][ 0 ];
-        var ii_error       = error_sequence[ ii ][ 1 ];
-        var ii_dc_list = library.codons_for_error_for_n_dcs[ ii ][ ii_n_extra_dcs ][ ii_error ];
+        var ii_n_dcs = error_sequence[ ii ][ 0 ];
+        var ii_error = error_sequence[ ii ][ 1 ];
+        var ii_dc_list = library.codons_for_error_for_n_dcs[ ii ][ ii_n_dcs ][ ii_error ];
         var codon_data =  record_codon_data( ii, ii_dc_list, library );
         dna_diversity_sum += codon_data.log_dna_diversity;
         aa_diversity_sum +=  codon_data.log_aa_diversity;

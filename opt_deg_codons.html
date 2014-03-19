@@ -343,9 +343,13 @@
                     <label for=stop_codon_penalty>Universal stop codon penalty:</label>
                     <input id=stop_codon_penalty title='Optional field. Stop codon penalty applied at all positions; overrides penalties given in the table.  Must be either empty, an integer, or an exclamation mark ("!").' type=text size=8>
                 </div>
-		<div id=max_extra_dcs_input>
-		    <label for=max_extra_primers>Maximum extra degenerate codons:</label>
-		    <input id=max_extra_primers title="When allowing a single position in each primer to include multiple degenerate codons, what is the total number of extra degenerate codons that you want to allow?" size=8>
+		<div id=max_primers_total>
+		    <label for=max_primers_total>Maximum primers total:</label>
+		    <input id=max_primers_total title="How many primers are you willing to purchase to construct your library?" size=8>
+		</div>
+		<div id=max_primers_per_stretch>
+		    <label for=max_primers_per_stretch>Maximum primers for a single stretch:</label>
+		    <input id=max_primers_per_stretch title="How many primers are you willing to purchase for a single stretch?  Set this to the same value that you've set for the max primers total if you do not want to put any restriction on the number of primers to be considered for a single stretch." size=8>
 		</div>
 		
                 <br>
