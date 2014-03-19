@@ -128,6 +128,7 @@
         <li><a href="#manual_tab">Manual input</a></li>
         <li><a href="#csv_tab">CSV input</a></li>
         <li><a href="#fasta_tab">FASTA input</a></li>
+        <li><a href="#msf_tab">MSF input</a></li>
     </ul>
     <div id=manual_tab class=hscroll>
         <!--<form id="mainForm" method="get" action="">-->
@@ -324,7 +325,7 @@
                     </p>
             </div>
             <div id=global_settings>
-	        <button id="allow_mult_dcs">Allow Mult. Deg. Codons</button>
+                <button id="allow_mult_dcs">Allow Mult. Deg. Codons</button>
                 <button id="add">Add Position</button>
                 <button id="delcol">Delete Position</button>
                 <br/><br/>
@@ -389,6 +390,24 @@
             must be the same length. Once completed, clicking the 'Update Table' button with populate
             the input table with the frequency of each amino acid at each position in the sequence.
             Positions which never vary are excluded from the table.
+            </p>
+
+            <p>
+            Once populated, one must still set the diversity bounds and the universal stop codon penalty (if desired)
+            </p>
+        </div>
+    </div>
+    <div id=msf_tab class=table_input>
+        <div class=table_input>
+            <textarea id=msf rows="30" cols="50"></textarea>
+            <br>
+            <button id="table_from_msf">Update Table</button>
+            <div id="msf_errors"></div>
+        </div>
+        <div class=instructions>
+            <span class=subheader>MSF input instructions</span>
+            <p>
+            To use the MSF input, paste a MSF formatted sequence alignment in the textbox. 
             </p>
 
             <p>

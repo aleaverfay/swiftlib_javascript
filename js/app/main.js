@@ -14,7 +14,7 @@ $(document).ready(function () {
 	});
 
 	//Add themable tooltips
-	$( document ).tooltip();
+	$( document ).tooltip( { position: { my: "left+15 center", at: "right center" } } );
 
 	//And themable buttons
 	$( "input[type=submit], button" ).button();
@@ -42,5 +42,6 @@ $(document).ready(function () {
 	update_table_validation_rules();
 
 	$("#table_from_fasta").click( populate_table_from_fasta );
+	$("#table_from_msf").click( populate_table_from_msf );
 });
 

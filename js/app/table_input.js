@@ -242,7 +242,7 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
     var output_html = []
     for ( var i=0; i < error_list.length; ++i ) {
         var table_i = [];
-        var error_trace = library.traceback_mdcs_from_nextra_and_error( error_list[i][0], error_list[i][1] );
+        var error_trace = library.traceback_from_nextra_and_error( error_list[i][0], error_list[i][1] );
         var i_data = report_output_library_data( library, error_trace, diversity_cap );
         var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td><td># Extra DCs</td>" +
                          "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td></tr><tr><td>",
@@ -368,7 +368,8 @@ function populate_table_from_fasta () {
     }
 
     //initialize table array, set defaults for table positions not definable in the FASTA format
-    var seq_length = fasta_contents[0].substr(fasta_contents[0].indexOf('\n')+1).trim().split('').length;
+    var seq_length = fasta_contents[0].substr(fasta_contents[0].indexOf('\n')+1).
+        trim().replace(/\r?\n|\r| /g,"").split('').length;
     var table_contents = [];
     for( var i=0; i < 24; ++i) {
         table_contents[i] = [];
@@ -383,7 +384,7 @@ function populate_table_from_fasta () {
     }
 
     for( var i=0; i < nsequences; ++i ) {
-        var cur_seq = fasta_contents[i].substr(fasta_contents[i].indexOf('\n')+1).trim().split('');
+        var cur_seq = fasta_contents[i].substr(fasta_contents[i].indexOf('\n')+1).trim().replace(/\r?\n|\r| /g,"").split('');
         console.log(cur_seq);
         var cur_length = cur_seq.length;
         if(cur_length != seq_length) {
@@ -454,8 +455,10 @@ function populate_table_from_fasta () {
                 case 'Y':
                     table_contents[22][j]++;
                     break;
+                case '-':
+                    break;
                 default:
-                    var msg = "<p>Invalid amino acid code in sequence " + i+1 + " position " + j+1 + "</p>";
+                    var msg = "<p>Invalid amino acid code " + cur_seq[j] + " in sequence " + i+1 + " position " + j+1 + "</p>";
                     $('#fasta_errors').html(msg).css("color","red").show();
                     return;
             }
@@ -521,6 +524,196 @@ function populate_table_from_fasta () {
         }
     }
     $('#fasta_errors').html('<p>Successfully updated the table</p>').css("color","green").show();
+    return;
+}
+
+function populate_table_from_msf () {
+    var msf_contents = $('#msf').val().split("//");
+    if(msf_contents.length < 2) {
+        $('#msf_errors').html('<p>Malformed MSF contents, expected "//" delimiter</p>').css("color","red").show();
+        return;
+    }
+    msf_contents = msf_contents[1].split('\n');
+    sequences = {}
+    for(var i=0; i < msf_contents.length; ++i) {
+        var cur_line = msf_contents[i].trim().split(/\s+/);
+        if(!(cur_line.length == 1 && cur_line[0] == "")) {
+            if(cur_line.length != 2) {
+                console.log(cur_line);
+                console.log(cur_line.length);
+                $('#msf_errors').html('<p>Malformed MSF contents, each sequence line must have a name and sequence</p>').css("color","red").show();
+                return;
+            }
+            if(sequences[cur_line[0]]) {
+                sequences[cur_line[0]] = sequences[cur_line[0]] + cur_line[1];
+            }
+            else {
+                sequences[cur_line[0]] = cur_line[1];
+            }
+        }
+    }
+
+    //Get the sequence length
+    var seq_length = 0;
+    for( var seq_name in sequences ) {
+        if(sequences.hasOwnProperty(seq_name)) {
+            var cur_length = sequences[seq_name].length;
+            seq_length = cur_length;
+            break;
+        }
+    }
+
+    //initialize table array, set defaults for table positions not definable in the MSF format
+    var table_contents = [];
+    for( var i=0; i < 24; ++i) {
+        table_contents[i] = [];
+    }
+    for( var j=0; j < seq_length; ++j) {
+        table_contents[0][j] = j+1;
+        table_contents[1][j] = '-';
+        table_contents[2][j] = 1;
+        for( var k=3; k<=23; ++k ) {
+            table_contents[k][j] = 0;
+        }
+    }
+
+    for( var seq_name in sequences ) {
+        if(sequences.hasOwnProperty(seq_name)) {
+            var cur_seq = sequences[seq_name];
+            console.log(cur_seq);
+            var cur_length = cur_seq.length;
+            if(cur_length != seq_length) {
+                console.log("seq length: " + seq_length);
+                console.log("cur length: " + cur_length);
+                var msg = "<p>All FASTA sequences must be the same length. Sequence '" + seq_name + "' is not the same size as previous sequences</p>";
+                $('#msf_errors').html(msg).css("color","red").show();
+                return;
+            }
+
+            for( var j=0; j < seq_length; ++j ) {
+                switch(cur_seq[j].toUpperCase()) {
+                    case 'A':
+                        table_contents[3][j]++;
+                        break;
+                    case 'C':
+                        table_contents[4][j]++;
+                        break;
+                    case 'D':
+                        table_contents[5][j]++;
+                        break;
+                    case 'E':
+                        table_contents[6][j]++;
+                        break;
+                    case 'F':
+                        table_contents[7][j]++;
+                        break;
+                    case 'G':
+                        table_contents[8][j]++;
+                        break;
+                    case 'H':
+                        table_contents[9][j]++;
+                        break;
+                    case 'I':
+                        table_contents[10][j]++;
+                        break;
+                    case 'K':
+                        table_contents[11][j]++;
+                        break;
+                    case 'L':
+                        table_contents[12][j]++;
+                        break;
+                    case 'M':
+                        table_contents[13][j]++;
+                        break;
+                    case 'N':
+                        table_contents[14][j]++;
+                        break;
+                    case 'P':
+                        table_contents[15][j]++;
+                        break;
+                    case 'Q':
+                        table_contents[16][j]++;
+                        break;
+                    case 'R':
+                        table_contents[17][j]++;
+                        break;
+                    case 'S':
+                        table_contents[18][j]++;
+                        break;
+                    case 'T':
+                        table_contents[19][j]++;
+                        break;
+                    case 'V':
+                        table_contents[20][j]++;
+                        break;
+                    case 'W':
+                        table_contents[21][j]++;
+                        break;
+                    case 'Y':
+                        table_contents[22][j]++;
+                        break;
+                    case '-':
+                        break;
+                    default:
+                        var msg = "<p>Invalid amino acid code " + cur_seq[j] + " in sequence " + i+1 + " position " + j+1 + "</p>";
+                        $('#fasta_errors').html(msg).css("color","red").show();
+                        return;
+                }
+            }
+        }
+    }
+
+    //remove non-variable positions
+	var nvariable_positions = 0;
+	var nremoved_positions = 0;
+    for( var i=0; i < seq_length - nremoved_positions; ++i ) {
+        var num_aas=0;
+        for( var j=3; j < 23; ++j ) {
+            if( table_contents[j][i] > 0 ) {
+                ++num_aas;
+            }
+        }
+        if(num_aas <= 1) {
+            for( var j=0; j < 24; ++j ) {
+                table_contents[j].splice(i, 1);
+            }
+			--i;
+			++nremoved_positions;
+    	}
+		else {
+			nvariable_positions++
+		}
+    }
+
+	if( nvariable_positions <= 0 ) {
+		var msg = "<p>You must have variability in at least one positions in the set of sequences</p>";
+		$('#msf_errors').html(msg).css("color","red").show();
+    	return;
+	}
+
+    //resize the table
+    var trs = $('#aacounts tbody').find('tr');
+    var ncolumns_curr = $(trs[0]).find('td').length - 1;
+    if ( ncolumns_curr < nvariable_positions ) {
+        for ( var i=ncolumns_curr; i < nvariable_positions; ++i ) {
+            add_column_to_aacounts();
+        }
+    } else {
+        for ( var i=ncolumns_curr; i > nvariable_positions; --i ) {
+            delete_column_from_aacounts();
+        }
+    }
+
+    //populate the table
+    var trs = $('#aacounts tbody').find('tr');
+    for ( var i=0; i < trs.length; ++i ) {
+        var tds = $(trs[i]).find("td");
+        var row_i = table_contents[i];
+        for ( var j=0; j < row_i.length; ++j ) {
+            $($(tds[j+1]).find("input")[0]).val( row_i[j] );
+        }
+    }
+    $('#msf_errors').html('<p>Successfully updated the table</p>').css("color","green").show();
     return;
 }
 
@@ -605,11 +798,11 @@ function validate_inputs_and_launch( launch_button ) {
         var starttime = new Date().getTime();
         var library = AALibrary();
         load_library_from_table( library, scp_val, max_extra_primers_val );
-        library.compute_smallest_diversity_for_all_errors_given_n_deg_codons_sparse();
+        library.compute_smallest_diversity_for_all_errors();
         if ( verify_solution_exists( library )) {
             library.optimize_library_multiple_dcs();
             if ( libsize_lower_val != libsize_lower_val ) {
-                var error_list = [ library.find_minimal_error_beneath_diversity_cap_mdcs( libsize_upper_val ) ];
+                var error_list = [ library.find_minimal_error_beneath_diversity_cap( libsize_upper_val ) ];
             } else {
                 var error_list = library.errors_and_ndcs_in_diversity_range( libsize_upper_val, libsize_lower_val );
                 console.log( "Error list: ", error_list.join(",") );
