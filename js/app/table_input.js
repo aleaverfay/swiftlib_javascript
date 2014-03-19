@@ -800,7 +800,7 @@ function validate_inputs_and_launch( launch_button ) {
         load_library_from_table( library, scp_val, max_extra_primers_val );
         library.compute_smallest_diversity_for_all_errors();
         if ( verify_solution_exists( library )) {
-            library.optimize_library_multiple_dcs();
+            library.optimize_library();
             if ( libsize_lower_val != libsize_lower_val ) {
                 var error_list = [ library.find_minimal_error_beneath_diversity_cap( libsize_upper_val ) ];
             } else {
@@ -835,6 +835,137 @@ function validate_inputs_and_launch( launch_button ) {
         $('#scrollhere').scrollIntoView();
     }, 1 );
 }
+
+/*
+function report_useful_codon_fraction( library ) {
+    // library.find_useful_codons must have been called first!
+    var dc = DegenerateCodon();
+    var lex = LexicographicalIterator( [ 15, 15, 15 ] );
+    for ( var i = 0; i < library.n_positions; ++i ) {
+        var iuseful = [ "Position ", library.orig_pos[i], " with ", library.useful_codons[i].length ];
+        iuseful.push( " useful codons of 3375 ( " + (library.useful_codons[i].length / 3375) + "% )" );
+        console.log( iuseful.join(" ") );
+        codons = []
+            for ( var j=0; j < library.useful_codons[i].length; ++j ) {
+                lex.set_from_index( library.useful_codons[i][j] );
+                dc.set_from_lex( lex );
+                codons.push( dc.codon_string() + "(" + library.useful_codons[i][j] + "," + j + ")" );
+            }
+        codons.sort();
+        console.log( "Useful codons: " +  codons.join(", ") );
+    }
+};
+*/
+
+/*
+
+function go() {
+
+    var library = AALibrary();
+
+    //dc = DegenerateCodon();
+    //dclex = LexicographicalIterator( [ 15, 15, 15 ] );
+    //dclex.set_from_index( 15*15*3 + 15*4 + 12 );
+    //dc.set_from_lex( dclex );
+    //dc.log_diversity();
+    //
+    //return;
+
+    //var dims = [7,7,7];
+    //var lex = LexicographicalIterator( dims );
+    //lex.upper_diagonal_reset();
+    //while ( ! lex.at_end ) {
+    //    console.log( "lex: " + lex.pos.join(", " ) );
+    //    lex.upper_diagonal_increment();
+    //}
+    //return;
+
+    var csv_contents = document.getElementById( "aaobs" ).value;
+    library.load_library( csv_contents );
+
+    library.enumerate_aas_for_all_degenerate_codons();
+    var starttime = new Date().getTime();
+    library.find_useful_codons();
+    library.report_useful_codon_fraction();
+    var stoptime = new Date().getTime();
+    console.log( "finding useful codons took " + (( stoptime - starttime ) / 1000 )+ " seconds " );
+
+    console.log( "enumerating sparse degenerate codon pairs" );
+    var starttime = new Date().getTime();
+    library.compute_smallest_diversity_for_all_errors();
+    var stoptime = new Date().getTime();
+    console.log( "enumerating sparse degenerate codon pairs took " + (( stoptime - starttime ) / 1000 )+ " seconds " );
+
+
+    console.log( "running DP considering multiple degenerate codons" );
+    var starttime = new Date().getTime();
+    library.optimize_library();
+    var stoptime = new Date().getTime();
+    console.log( "running DP considering multiple degenerate codons took " + (( stoptime - starttime ) / 1000 )+ " seconds " );
+
+    var error_traceback = library.traceback( Math.log( 3.2e8 ) );
+
+    var old = report_output_library_data( library, error_traceback );
+    for ( var ii = 0; ii < library.n_positions; ++ii ) {
+        var iipos = old.positions[ ii ];
+        console.log( "Pos: " + iipos.orig_pos_string + " codons: " + iipos.codon_string + " AAs: " + iipos.present_string + " Absent: " + iipos.absent_string );
+    }
+
+
+    //console.log( "enumerating degenerate codon pairs" );
+    //library.compute_smallest_diversity_for_all_errors();
+    //var starttime = new Date().getTime();
+    //library.compute_smallest_diversity_for_all_errors_given_n_degenerate_codons();
+    //var stoptime = new Date().getTime();
+    //console.log( "enumerating degenerate codon pairs took " + (( stoptime - starttime ) / 1000 )+ " seconds " );
+    //
+    //var nbad = 0;
+    //for ( var i = 0; i < library.n_positions; ++i ) {
+    //    for ( var j = 0; j < library.max_per_position_error; ++j ) {
+    //        if ( Math.abs( library.divmin_for_error_for_n_dcs[i][0][j] - library.divmin_for_error[i][j] ) > 1e-6 ) {
+    //            nbad += 1;
+    //            if ( nbad < 10 ) {
+    //                console.log( "Bad #" + nbad + ", pos " + i + " error " + j + " " + library.divmin_for_error_for_n_dcs[i][0][j] + " != " + library.divmin_for_error[i][j] );
+    //            }
+    //        }
+    //    }
+    //}
+    //console.log( "Nbad comparing library.divmin_for_error_for_n_dcs[i][0] against library.divmin_for_error[i]: " + nbad );
+    //
+    //var nbad = 0;
+    //for ( var i = 0; i < library.n_positions; ++i ) {
+    //    for ( var j = 0; j < library.max_dcs_per_pos; ++j ) {
+    //        for ( var k = 0; k < library.max_per_position_error; ++k ) {
+    //            if ( Math.abs( library.divmin_for_error_for_n_dcs[i][j][k] - library.divmin_for_error_for_n_dcs_sparse[i][j][k] ) > 1e-6 ) {
+    //                nbad += 1;
+    //                if ( nbad < 10 ) {
+    //                    console.log( "Bad #" + nbad + ", pos " + i + " ncodons " + j + " error " + k + " " + library.divmin_for_error_for_n_dcs[i][j][k] + " != " + library.divmin_for_error_for_n_dcs_sparse[i][j][k] );
+    //                    var codons = [];
+    //                    var dc = DegenerateCodon();
+    //                    var lex = LexicographicalIterator( [ 15, 15, 15 ] );
+    //                    for ( var l = 0; l < library.codons_for_error_for_n_dcs[i][j][k].length; ++l ) {
+    //                        var lexind = library.codons_for_error_for_n_dcs[i][j][k][l];
+    //                        lex.set_from_index( lexind );
+    //                        dc.set_from_lex( lex );
+    //                        codons.push( dc.codon_string() );
+    //                    }
+    //                    console.log( "Codons: " + codons.join(", ") );
+    //                }
+    //            }
+    //        }
+    //    }
+    //}
+    //console.log( "Nbad comparing library.divmin_for_error_for_n_dcs against library.divmin_for_error_for_n_dcs_sparse: " + nbad );
+
+    //var diversity_cap = 320000000;
+    //var best = library.optimize_library( diversity_cap );
+    //print_output_codons( library, best, diversity_cap );
+}
+
+*/
+
+
+
 
 // Local Variables:
 // js-indent-level: 4

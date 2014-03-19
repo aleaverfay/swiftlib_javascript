@@ -192,7 +192,7 @@ test( "AALibrary optimize library (multiple-degenerate codons)", function() {
 	ok( library.required[ 1 ][ 14 ]  === false, "Arginine at position 2 required === false" );
 	ok( library.forbidden[ 1 ][ 14 ] === false, "Arginine at position 2 forbidden === false" );
 	ok( library.orig_pos[ 1 ] === "269", "Original residue id for position 2 === 330" );
-	ok( library.primer_reps[ 1 ] === 0, "Primer representative for position 2 === position 1" );
+	ok( library.stretch_reps[ 1 ] === 0, "Primer representative for position 2 === position 1" );
 	ok( library.max_dcs_for_pos[ 1 ] === 2, "Maximum number of degenerate codons for position 7 === 2" );
 
 	console.log( "  library.enumerate_aas_for_all_degenerate_codons();" );
@@ -223,8 +223,8 @@ test( "AALibrary optimize library (multiple-degenerate codons)", function() {
 	console.log( "  library.compute_smallest_diversity_for_all_errors();" );
 	library.compute_smallest_diversity_for_all_errors();
 
-	console.log( "  library.optimize_library_multiple_dcs();" );
-	library.optimize_library_multiple_dcs();
+	console.log( "  library.optimize_library();" );
+	library.optimize_library();
 	console.log( "  library.traceback( 3.2e4 );" );
 	var error_traceback = library.traceback( 3.2e4 );
 	console.log( "  report_output_library_data( library, error_traceback );" );
@@ -321,7 +321,7 @@ test( "AALibrary optimize library (classic)", function() {
 	ok( library.required[ 1 ][ 14 ]  === false, "Arginine at position 2 required === false" );
 	ok( library.forbidden[ 1 ][ 14 ] === false, "Arginine at position 2 forbidden === false" );
 	ok( library.orig_pos[ 1 ] === "269", "Original residue id for position 2 === 330" );
-	ok( library.primer_reps[ 1 ] === 0, "Primer representative for position 2 === position 1" );
+	ok( library.stretch_reps[ 1 ] === 0, "Primer representative for position 2 === position 1" );
 
 	console.log( "  library.enumerate_aas_for_all_degenerate_codons();" );
 	library.enumerate_aas_for_all_degenerate_codons();
@@ -333,8 +333,8 @@ test( "AALibrary optimize library (classic)", function() {
 	console.log( "  library.compute_smallest_diversity_for_all_errors();" );
 	library.compute_smallest_diversity_for_all_errors();
 
-	console.log( "  library.optimize_library_multiple_dcs();" );
-	library.optimize_library_multiple_dcs();
+	console.log( "  library.optimize_library();" );
+	library.optimize_library();
 	console.log( "  library.traceback( 3.2e4 );" );
 	var error_traceback = library.traceback( 3.2e4 );
 	console.log( "  report_output_library_data( library, error_traceback );" );
