@@ -243,12 +243,12 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
     var output_html = []
     for ( var i=0; i < error_list.length; ++i ) {
         var table_i = [];
-        var error_trace = library.traceback_from_nextra_and_error( error_list[i][0], error_list[i][1] );
+        var error_trace = library.traceback_from_starting_point( error_list[i][0], error_list[i][1], error_list[i][2] );
         var i_data = report_output_library_data( library, error_trace, diversity_cap );
         var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td><td># Extra DCs</td>" +
                          "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td></tr><tr><td>",
                          (i+1).toString(), "</td><td>",
-                         error_list[i][1].toString(), "</td><td>",
+                         error_list[i][2].toString(), "</td><td>",
                          error_list[i][0].toString(), "</td><td>",
                          i_data.dna_diversity.toExponential(3), "</td><td>",
                          i_data.aa_diversity.toExponential(3), "</td></tr></table><br>" ];
@@ -809,7 +809,7 @@ function validate_inputs_and_launch( launch_button ) {
     setTimeout( function () {
         var starttime = new Date().getTime();
         var library = AALibrary();
-        load_library_from_table( library, scp_val, max_primers_total_val, max_primers_per_stretch );
+        load_library_from_table( library, scp_val, max_primers_total_val, max_primers_per_stretch_val );
         library.compute_smallest_diversity_for_all_errors();
         if ( verify_solution_exists( library )) {
             library.optimize_library();

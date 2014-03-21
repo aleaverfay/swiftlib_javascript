@@ -331,7 +331,7 @@
                 <br/><br/>
                 <div>
                     <label for=libsize_upper>*Library size upper limit:</label>
-                    <input id=libsize_upper title="Required field. The maximum allowable DNA diversity for the generated degenerate codons" type=text size=8 >
+                    <input id=libsize_upper title="Required field. The maximum allowable DNA diversity for the generated degenerate codons" type=text size=8 value="3.2e8">
                 </div>
 
                 <div>
@@ -343,13 +343,13 @@
                     <label for=stop_codon_penalty>Universal stop codon penalty:</label>
                     <input id=stop_codon_penalty title='Optional field. Stop codon penalty applied at all positions; overrides penalties given in the table.  Must be either empty, an integer, or an exclamation mark ("!").' type=text size=8>
                 </div>
-		<div id=max_primers_total>
+		<div>
 		    <label for=max_primers_total>Maximum primers total:</label>
-		    <input id=max_primers_total title="How many primers are you willing to purchase to construct your library?" size=8>
+		    <input id=max_primers_total title="How many primers are you willing to purchase to construct your library?" size=8 value="6">
 		</div>
-		<div id=max_primers_per_stretch>
+		<div>
 		    <label for=max_primers_per_stretch>Maximum primers for a single stretch:</label>
-		    <input id=max_primers_per_stretch title="How many primers are you willing to purchase for a single stretch?  Set this to the same value that you've set for the max primers total if you do not want to put any restriction on the number of primers to be considered for a single stretch." size=8>
+		    <input id=max_primers_per_stretch title="How many primers are you willing to purchase for a single stretch?  Set this to the same value that you've set for the max primers total if you do not want to put any restriction on the number of primers to be considered for a single stretch." size=8 value="4">
 		</div>
 		
                 <br>
