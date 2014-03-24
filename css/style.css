@@ -68,6 +68,19 @@ label {
 .rteven {
     background-color:#EAF2D3;
 }
+.rteo {
+    background-color:#CFEC5C; /*#EAF2D3*/ /*128 153 131*/
+}
+.rtoo {
+    background-color:#EAF2D3; /*#EFF3E3*/ /*214 255 219 */
+}
+.rtee {
+    background-color:#F9F9AA; /* 147 147 125 */
+}
+.rtoe {
+    background-color:#F5F5D1; /* 245 245 209 */
+}
+
 
 tr.firstrow td {
     border-top: thin solid black;

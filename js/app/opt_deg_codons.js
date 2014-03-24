@@ -797,7 +797,9 @@ function AALibrary() {
     }
 
 
-    library.optimize_library = function() {
+    library.optimize_library = function( diversity_limit ) {
+        var log_diversity_limit = Math.log( diversity_limit );
+
         this.error_span = this.max_per_position_error * this.n_positions;
 
         // start by allocating the appropriate amount of space for the dynamic
@@ -836,110 +838,120 @@ function AALibrary() {
             }
         }
 
-        // position 0 is by definition the first residue in a stretch
-        // so start counting the stretches from 1.
-        var count_stretch = 1;
+        // iterate over all errors (stopping once an error beneath the diversity limit has been
+        // reached) and solving for the smallest library size that can be achieved with at most
+        // hh error.  It's very likely that the desired library could be constructed without
+        // having to explore all of error space, and since the error space is the largest space
+        // to be explored, this approach could reducing running time dramatically.
+        var found_minimum_error_solution = false;
+        for ( var hh=0; hh <= this.error_span; ++hh ) {
 
-        // iterate over all positions ii, solving the dynamic programming
-        // problem for residues 0..ii
-        for ( var ii=1; ii < this.n_positions; ++ii ) {
-            var iidpdivmin    = this.dp_divmin[ ii ];
-            var iidptraceback = this.dp_traceback[ ii ];
+            // position 0 is by definition the first residue in a stretch
+            // so start counting the stretches from 1.
+            var count_stretch = 1;
 
-            var iim1dpdivmin    = this.dp_divmin[ ii-1 ];
+            // iterate over all positions ii, solving the dynamic programming
+            // problem for residues 0..ii for a given error hh
+            for ( var ii=1; ii < this.n_positions; ++ii ) {
+                var iilastpos = ii === this.n_positions - 1;
 
-            // one of two different recursions based on whether this is the
-            // first residue in a stretch
-            if ( ii === this.stretch_reps[ ii ] ) {
-                ++count_stretch;
+                // check that it would be possible to achieve an error of hh at position ii
+                if ( this.max_per_position_error * (ii+1) < hh ) continue;
 
-                // iterate across the total number of oligos committed to up to position ii
-                // this can be at most count_stretch * this.max_oligos_per_stretch;
-                var jjlimit = Math.min( this.max_oligos_total, count_stretch * this.max_oligos_per_stretch );
-
-                for ( var jj = count_stretch; jj <= jjlimit; ++jj ) {
-                    var jjdpdivmin    = iidpdivmin[ jj ];
-                    var jjdptraceback = iidptraceback[ jj ];
-
-                    // iterate over the number of degenerate codons to be used at position ii
-                    // this is at most jj-1 since we are adding kk to the number of oligos
-                    // used up to position ii-1 and this second number cannot be 0.
-                    var kklimit = Math.min( this.max_dcs_for_pos[ii], jj-1 );
-                    for ( var kk = 1; kk <= kklimit; ++kk ) {
-                        // not all jj/kk combos are achievable
-                        if ( jj-kk > (count_stretch-1)*this.max_oligos_per_stretch ) continue;
-                        
-                        var kkdpdivmin    = jjdpdivmin[ kk ];
-                        var kkdptraceback = jjdptraceback[ kk ];
-                        var kkerrors      = this.errors_for_n_dcs_for_position[ii][kk];
-                        var kkdiversities = this.divmin_for_error_for_n_dcs[ii][kk];
-                        var iim1_jjmkk_dpdivmin    = iim1dpdivmin[ jj-kk ];
-
-                        // now consider all of the errors that are achievable for positions 0..ii
-                        var lllimit = ii * this.max_per_position_error;
-                        for ( var ll = 0; ll <= lllimit; ++ll ) {
-                            var lldivmin          = this.infinity;
-                            var lldivmin_iierror  = this.infinity;
-                            var lldivmin_iindcs   = this.infinity;
-                            var lldivmin_iim1ndcs = this.infinity;
+                var iidpdivmin    = this.dp_divmin[ ii ];
+                var iidptraceback = this.dp_traceback[ ii ];
+    
+                var iim1dpdivmin    = this.dp_divmin[ ii-1 ];
+    
+                // one of two different recursions based on whether this is the
+                // first residue in a stretch
+                if ( ii === this.stretch_reps[ ii ] ) {
+                    ++count_stretch;
+    
+                    // iterate across the total number of oligos committed to up to position ii
+                    // this can be at most count_stretch * this.max_oligos_per_stretch;
+                    var jjlimit = Math.min( this.max_oligos_total, count_stretch * this.max_oligos_per_stretch );
+    
+                    for ( var jj = count_stretch; jj <= jjlimit; ++jj ) {
+                        var jjdpdivmin    = iidpdivmin[ jj ];
+                        var jjdptraceback = iidptraceback[ jj ];
+    
+                        // iterate over the number of degenerate codons to be used at position ii
+                        // this is at most jj-1 since we are adding kk to the number of oligos
+                        // used up to position ii-1 and this second number cannot be 0.
+                        var kklimit = Math.min( this.max_dcs_for_pos[ii], jj-1 );
+                        for ( var kk = 1; kk <= kklimit; ++kk ) {
+                            // not all jj/kk combos are achievable
+                            if ( jj-kk > (count_stretch-1)*this.max_oligos_per_stretch ) continue;
+                            if ( jj-kk < count_stretch-1 ) continue;
+                            
+                            var kkdpdivmin    = jjdpdivmin[ kk ];
+                            var kkdptraceback = jjdptraceback[ kk ];
+                            var kkerrors      = this.errors_for_n_dcs_for_position[ii][kk];
+                            var kkdiversities = this.divmin_for_error_for_n_dcs[ii][kk];
+                            var iim1_jjmkk_dpdivmin    = iim1dpdivmin[ jj-kk ];
+    
+                            var hhdivmin          = this.infinity;
+                            var hhdivmin_iierror  = this.infinity;
+                            var hhdivmin_iindcs   = this.infinity;
+                            var hhdivmin_iim1ndcs = this.infinity;
 
                             // now look at all the errors possible from position ii when using kk degenerate codons
                             var mmlimit = kkerrors.length;
                             for ( var mm = 0; mm <= mmlimit; ++mm ) {
                                 var mmerror = kkerrors[mm];
-                                if ( mmerror > ll ) break; // error is always positive
+                                if ( mmerror > hh ) break; // error is always positive
                                 var mmdiversity = kkdiversities[mmerror];
-                                var ll_minus_mmerr = ll - mmerror;
+                                var hh_minus_mmerr = hh - mmerror;
                                 // and look at all the number of primers used in the stretch that position ii-1 is part of
                                 var nnlimit = this.max_oligos_per_stretch;
                                 for ( var nn = 1; nn <= nnlimit; ++nn ) {
-                                    if ( iim1_jjmkk_dpdivmin[ nn ].hasOwnProperty( ll_minus_mmerr ) ) {
-                                        var nndiv = iim1_jjmkk_dpdivmin[nn][ ll_minus_mmerr ] + mmdiversity;
-                                        if ( lldivmin === this.infinity || nndiv < lldivmin ) {
-                                            lldivmin          = nndiv;
-                                            lldivmin_iierror  = mmerror;
-                                            lldivmin_iindcs   = kk;
-                                            lldivmin_iim1ndcs = nn;
+                                    if ( iim1_jjmkk_dpdivmin[ nn ].hasOwnProperty( hh_minus_mmerr ) ) {
+                                        var nndiv = iim1_jjmkk_dpdivmin[nn][ hh_minus_mmerr ] + mmdiversity;
+                                        if ( hhdivmin === this.infinity || nndiv < hhdivmin ) {
+                                            hhdivmin          = nndiv;
+                                            hhdivmin_iierror  = mmerror;
+                                            hhdivmin_iindcs   = kk;
+                                            hhdivmin_iim1ndcs = nn;
                                         }
                                     }
                                 } // for nn
                             } // for mm
-                            if ( lldivmin !== this.infinity ) {
-                                //if ( ll < 40 ) console.log( "  divmin[" + ii + ","+jj+","+kk+","+ll + "] = " + lldivmin );
+                            if ( hhdivmin !== this.infinity ) {
+                                //if ( hh < 40 ) console.log( "  divmin[" + ii + ","+jj+","+kk+","+hh + "] = " + hhdivmin );
                                 // record diveristy-minimum and traceback info
-                                kkdpdivmin   [ ll ] = lldivmin;
-                                kkdptraceback[ ll ] = [ lldivmin_iierror, lldivmin_iindcs, lldivmin_iim1ndcs ];
+                                kkdpdivmin   [ hh ] = hhdivmin;
+                                kkdptraceback[ hh ] = [ hhdivmin_iierror, hhdivmin_iindcs, hhdivmin_iim1ndcs ];
+                                if ( iilastpos && hhdivmin < log_diversity_limit ) {
+                                    found_minimum_error_solution = true;
+                                }
                             }
-                        }// for ll
-                    } // for kk
-                } // for jj
-            } else {
-
-                // iterate across the total number of oligos commited to up to position ii
-                // this can be at most count_stretch * this.max_oligos_per_stretch;
-                var jjlimit = Math.min( this.max_oligos_total, count_stretch * this.max_oligos_per_stretch );
-                for ( var jj = count_stretch; jj <= jjlimit; ++jj ) {
-                    var jjdpdivmin    = iidpdivmin[ jj ];
-                    var jjdptraceback = iidptraceback[ jj ];
-
-                    // Iterate over the number of oligos committed to by all of the residues
-                    // from the current stretch; this will place certain restrictions on the
-                    // number of degenerate codons that can be used at position ii.
-                    // This is at most jj (instead of jj-1 in the if block above) since we
-                    // might be using only a single oligo for the positions in this stretch.
-                    var kklimit = Math.min( this.max_oligos_per_stretch, jj );
-                    for ( var kk = 1; kk <= kklimit; ++kk ) {
-
-                        var kkdpdivmin    = jjdpdivmin[ kk ];
-                        var kkdptraceback = jjdptraceback[ kk ];
-
-                        /// now consider all possible error values up to position ii
-                        var lllimit = ii * this.max_per_position_error;
-                        for ( var ll = 0; ll <= lllimit; ++ll ) {
-                            var lldivmin          = this.infinity;
-                            var lldivmin_iierror  = this.infinity;
-                            var lldivmin_iindcs   = this.infinity;
-                            var lldivmin_iim1ndcs = this.infinity;
+                        } // for kk
+                    } // for jj
+                } else {
+    
+                    // iterate across the total number of oligos commited to up to position ii
+                    // this can be at most count_stretch * this.max_oligos_per_stretch;
+                    var jjlimit = Math.min( this.max_oligos_total, count_stretch * this.max_oligos_per_stretch );
+                    for ( var jj = count_stretch; jj <= jjlimit; ++jj ) {
+                        var jjdpdivmin    = iidpdivmin[ jj ];
+                        var jjdptraceback = iidptraceback[ jj ];
+    
+                        // Iterate over the number of oligos committed to by all of the residues
+                        // from the current stretch; this will place certain restrictions on the
+                        // number of degenerate codons that can be used at position ii.
+                        // This is at most jj (instead of jj-1 in the if block above) since we
+                        // might be using only a single oligo for the positions in this stretch.
+                        var kklimit = Math.min( this.max_oligos_per_stretch, jj );
+                        for ( var kk = 1; kk <= kklimit; ++kk ) {
+    
+                            var kkdpdivmin    = jjdpdivmin[ kk ];
+                            var kkdptraceback = jjdptraceback[ kk ];
+    
+                            var hhdivmin          = this.infinity;
+                            var hhdivmin_iierror  = this.infinity;
+                            var hhdivmin_iindcs   = this.infinity;
+                            var hhdivmin_iim1ndcs = this.infinity;
 
                             // how can we achieve this error level?
 
@@ -965,29 +977,36 @@ function AALibrary() {
                                 var nnlimit = mmerrors.length;
                                 for ( var nn = 0; nn <= nnlimit; ++nn ) {
                                     var nnerror = mmerrors[ nn ];
-                                    if ( nnerror > ll ) continue;
-                                    var ll_minus_nnerror = ll - nnerror;
-                                    if ( iim1_mm_dpdivmin.hasOwnProperty( ll_minus_nnerror ) ) {
-                                        var nndiv = mmdiversities[ nnerror ] + iim1_mm_dpdivmin[ ll_minus_nnerror ];
-                                        if ( lldivmin === this.infinity || nndiv < lldivmin ) {
-                                            lldivmin          = nndiv;
-                                            lldivmin_iierror  = nnerror;
-                                            lldivmin_iindcs   = mm;
-                                            lldivmin_iim1ndcs = mmprime;
+                                    if ( nnerror > hh ) continue;
+                                    var hh_minus_nnerror = hh - nnerror;
+                                    if ( iim1_mm_dpdivmin.hasOwnProperty( hh_minus_nnerror ) ) {
+                                        var nndiv = mmdiversities[ nnerror ] + iim1_mm_dpdivmin[ hh_minus_nnerror ];
+                                        if ( hhdivmin === this.infinity || nndiv < hhdivmin ) {
+                                            hhdivmin          = nndiv;
+                                            hhdivmin_iierror  = nnerror;
+                                            hhdivmin_iindcs   = mm;
+                                            hhdivmin_iim1ndcs = mmprime;
                                         }
                                     }
                                 } // for nn
                             }// for mm
-                            if ( lldivmin !== this.infinity ) {
-                                //if ( ll < 40 ) console.log( "  divmin[" + ii + ","+jj+","+kk+","+ll + "] = " + lldivmin );
-                                kkdpdivmin[    ll ] = lldivmin;
-                                kkdptraceback[ ll ] = [ lldivmin_iierror, lldivmin_iindcs, lldivmin_iim1ndcs ];
+                            if ( hhdivmin !== this.infinity ) {
+                                //if ( hh < 40 ) console.log( "  divmin[" + ii + ","+jj+","+kk+","+hh + "] = " + hhdivmin );
+                                kkdpdivmin[    hh ] = hhdivmin;
+                                kkdptraceback[ hh ] = [ hhdivmin_iierror, hhdivmin_iindcs, hhdivmin_iim1ndcs ];
+                                if ( iilastpos && hhdivmin < log_diversity_limit ) {
+                                    found_minimum_error_solution = true;
+                                }
                             }
-                        } //for ll
-                    } // for kk
-                } // for jj
-            } // else
-        } // for ii
+
+                        } // for kk
+                    } // for jj
+                } // else
+            } // for ii
+
+            if ( found_minimum_error_solution ) break;
+
+        } // for hh
 
     };
 

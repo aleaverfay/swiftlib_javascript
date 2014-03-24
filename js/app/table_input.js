@@ -245,7 +245,7 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
         var table_i = [];
         var error_trace = library.traceback_from_starting_point( error_list[i][0], error_list[i][1], error_list[i][2] );
         var i_data = report_output_library_data( library, error_trace, diversity_cap );
-        var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td><td># Extra DCs</td>" +
+        var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td><td># Oligos Total</td>" +
                          "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td></tr><tr><td>",
                          (i+1).toString(), "</td><td>",
                          error_list[i][2].toString(), "</td><td>",
@@ -258,15 +258,22 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
         } else {
             table.push( "<table class=result_table>" );
         }
-        table.push( "<tr class=rtheader><td>Pos</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td></tr>" );
+        table.push( "<tr class=rtheader><td>Pos</td><td>Stretch</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td></tr>" );
+        var count_stretch = 0;
         for ( var j=0; j < library.n_positions; ++j ) {
+            if ( library.stretch_reps[j] === j ) ++count_stretch
             var j_pos = i_data.positions[j];
-            if ( j % 2 === 0 ) {
-                table.push( "<tr class=rteven>" );
+            if ( j % 2 === 0 && count_stretch % 2 === 0 ) {
+                table.push( "<tr class=rtee>" );
+            } else if ( j % 2 === 0 ) {
+                table.push( "<tr class=rteo>" );
+            } else if ( count_stretch % 2 === 0 ) {
+                table.push( "<tr class=rtoe>" );
             } else {
-                table.push( "<tr class=rtodd>" );
+                table.push( "<tr class=rtoo>" );
             }
             table.push( [ "<td>", j_pos.orig_pos_string, "</td>" ].join("") );
+            table.push( [ "<td>", count_stretch.toString(), "</td>" ].join("") );
             table.push( [ "<td>", j_pos.codon_string,"</td>" ].join("") );
             table.push( [ "<td>", j_pos.present_string,"</td>" ].join("") );
             table.push( [ "<td>", j_pos.absent_string,"</td>" ].join("") );
@@ -812,7 +819,7 @@ function validate_inputs_and_launch( launch_button ) {
         load_library_from_table( library, scp_val, max_primers_total_val, max_primers_per_stretch_val );
         library.compute_smallest_diversity_for_all_errors();
         if ( verify_solution_exists( library )) {
-            library.optimize_library();
+            library.optimize_library( libsize_upper_val );
             if ( libsize_lower_val != libsize_lower_val ) {
                 var error_list = [ library.find_minimal_error_beneath_diversity_cap( libsize_upper_val ) ];
             } else {
