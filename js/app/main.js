@@ -30,7 +30,7 @@ $(document).ready(function () {
 
 	$('#primerboundary_row').hide();
 	$('#maxdcs_row').hide();
-	$('#max_extra_dcs_input').hide();
+	$('#max_primers_total_div').hide();
 
 	$('#allow_mult_dcs').click( function() { enable_or_disable_mdcs( this ); } );
 	$('#add').click( add_column_to_aacounts );
