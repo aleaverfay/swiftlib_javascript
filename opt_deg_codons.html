@@ -57,19 +57,18 @@
 
 	<p>
 	Additionally, it is possible to ask the algorithm to allow multiple degenerate
-	codons at one or more positions but under the restriction that only one position
-	for a single primer is allowed to have more than one degenerate codon.  For
-	instance, if you are randomizing residues 45, 46, 48, 102, 104, and 106, then
-	the optimal library might contain two degenerate codons for position 48 and two
-	degenerate codons for position 102, assuming the first three positions are randomized
-	with a single primer, and the second three positions are randomized with a second
-	primer.  It is up to the user to define the primer boundaries; in this case, it
-	might be worth while to have residues 45 and 46 belong to a separate primer from
-	residue 48.  The most expensive part of considering multiple degenerate codons
-	is enumerating all combinations of degenerate codons; allowing <i>i</i> degenerate codons
-	at a single position requires looking at <i>(15<sup>3</sup>)<sup>i</sup></i>
-	combinations.  For this reason we do not recommend using more than 2 degenerate codons
-	at any one position.
+	codons at one or more positions.  You simply indicate the primer boundaries and
+	how many oligos you are willing to buy. The algorithm will choose which positions
+	to use multiple degenerate codons at to get the best coverage.  The number of oligos
+	that must be purchased to cover the randomized residues
+	that lie inside the same primer boundaries is the product of the number of degenerate
+	codons used at each of those positions.  E.g. if there are three residues that are part
+	of the same stretch using, 2, 3, and 4 degenerate codons, then to cover all combinations,
+	2*3*4 = 24 oligos would have to be purchased. One of the more expensive parts of
+	considering multiple degenerate codons is enumerating all combinations of degenerate
+	codons; allowing <i>i</i> degenerate codons at a single position requires looking at
+	<i>(15<sup>3</sup>)<sup>i</sup></i> combinations.  For this reason we do not recommend
+	using more than 4 degenerate codons at any one position.
 	</p>
 
         <span class=subheader>Algorithm</span>
@@ -83,6 +82,8 @@
         <i>n</i> positions and <i>m</i> error gradations.  In the case above, n=15, and
         m=100 (the maximum error would be 100 given by a codon that doesn't contain any
         of the desired amino acids; the larger the maximum error the longer the running time).
+	Analysis for the multiple-degenerate-codon algorithm is slightly more complicated
+	and will be published shortly.
         </p>
         
         <p>
@@ -307,12 +308,16 @@
 		    <li> Activate the multiple-degenerate-codon algorithm by clicking on the "Allow Mult. Deg. Codons" button below.
 		         This will add two rows to the table.
 		    <li> The user must define primer boundaries in the "Primer Boundary" row.
-		    <li> Indicate the first residue in a primer with the "|" symbol.
-		    <li> Indicate that a residue belongs in the same primer as the previous residue with the "-" symbol.
-		    <li> The maximum number of degenerate codons ("Max DCs") to consider at each position should be either 1 or 2.
-		    <li> The maximum number of extra degenerate codons must be given below the table.  If you have four primers
-		         and set the maximum number of extra degenerate codons to be two, then the algorithm will choose which
-                         two primers to allow extra degenerate codons at.
+		    <li> Indicate the first residue in a primer with the "|" (pipe) symbol.
+		    <li> Indicate that a residue belongs in the same primer as the previous residue with the "-" (dash) symbol.
+		    <li> The maximum number of degenerate codons ("Max DCs") to consider at each position should an integer;
+		      enumerating the combinations of degenerate codons when more than 2 are requested at any position can
+		      be very time consuming.  5 is the recommended maximum.
+		    <li> Allowing multiple degenerate codons means purchasing extra oligos (primers).  Indicate the number of
+		      oligos you are willing to purchase total in the "Maximum Primers Total" box below the table.  This number
+		      should be more than the number of stretches you have, and will be increased to the number of stretches
+		      you have if a smaller value is given.  If you have 5 stretches and say you are willing to purchase 6 oligos,
+		      then the algorithm will only be able to use multiple degenerate codons at a single position.
 		</ul>
                 <span class=subheader>Saving Data</span>
                     <p>

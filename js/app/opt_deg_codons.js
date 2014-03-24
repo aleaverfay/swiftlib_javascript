@@ -368,8 +368,8 @@ function AALibrary() {
     function init( library ) {
         library.infinity = -1.0;
         library.gcmapper = GeneticCodeMapper();
-        library.max_dcs_per_pos = 2;
-        library.max_oligos_per_stretch = 2;
+        library.max_dcs_per_pos = 1;
+        library.max_oligos_per_stretch = 0;
         library.max_oligos_total = 0;
         library.n_stretches = 0;
     }
@@ -476,7 +476,9 @@ function AALibrary() {
         // at least one position in a stretch to have as many degenerate codons
         // as has been allowed at that position, otherwise there is no point in
         // entertaining that many degenerate codons at all.
-        if ( this.max_oligos_per_stretch < this.max_dcs_per_pos ) {
+        if ( this.max_oligos_per_stretch === 0 ) {
+            this.max_oligos_per_stretch = this.max_oligos_total - this.n_stretches + 1;
+        } else if ( this.max_oligos_per_stretch < this.max_dcs_per_pos ) {
             console.log( "Increasing max_oligos_per_stretch to " + this.max_oligos_per_stretch );
             this.max_oligos_per_stretch = this.max_dcs_per_pos;
         }
