@@ -335,8 +335,8 @@
                 </div>
 
                 <div>
-                    <label for=libsize_lower>Library size lower limit:</label>
-                    <input id=libsize_lower title="Optional field. The lower bound on the DNA diversity of the generated codons. If provided, multiple solutions within diversity range will be provided" type=text size=8>
+                    <label for=nsolutions># Requested Solutions:</label>
+                    <input id=nsolutions title="Optional field. The number of solutions to returned.  The optimal solution will always be returned " type=text size=8>
                 </div>
 
                 <div>
@@ -347,10 +347,10 @@
 		    <label for=max_primers_total>Maximum primers total:</label>
 		    <input id=max_primers_total title="How many primers are you willing to purchase to construct your library?" size=8 value="15">
 		</div>
-		<div>
+		<!-- <div>
 		    <label for=max_primers_per_stretch>Maximum primers for a single stretch:</label>
 		    <input id=max_primers_per_stretch title="How many primers are you willing to purchase for a single stretch?  Set this to the same value that you've set for the max primers total if you do not want to put any restriction on the number of primers to be considered for a single stretch." size=8 value="4">
-		</div>
+		</div> -->
 		
                 <br>
                 <button id="launchbutton">Generate library!</button>

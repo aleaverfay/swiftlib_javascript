@@ -27,7 +27,7 @@ function primer_boundary_valid( cell_val ) {
 }
 
 function max_dcs_per_pos_valid( cell_val ) {
-    return cell_val === "1" || cell_val === "2";
+    return val_is_integer( cell_val ) && parseInt( cell_val ) > 0;
 }
 
 function stop_codon_penalty_valid( cell_val ) {
@@ -36,12 +36,16 @@ function stop_codon_penalty_valid( cell_val ) {
 
 function libsize_upper_valid( cell_val ) { return val_is_number( cell_val ); }
 
-function libsize_lower_valid( libsize_upper, cell_val ) {
-    if ( cell_val === "" ) return true;
-    if ( ! val_is_number( cell_val ) ) return false;
-    var libsize_lower = parseFloat( cell_val );
-    if ( libsize_lower < 0 ) return false;
-    return libsize_lower < libsize_upper;
+//function libsize_lower_valid( libsize_upper, cell_val ) {
+//    if ( cell_val === "" ) return true;
+//    if ( ! val_is_number( cell_val ) ) return false;
+//    var libsize_lower = parseFloat( cell_val );
+//    if ( libsize_lower < 0 ) return false;
+//    return libsize_lower < libsize_upper;
+//}
+
+function nsolutions_valid( cell_val ) {
+    return ( cell_val === "" ) || ( val_is_integer( cell_val ) && parseInt( cell_val ) > 0 );
 }
 
 function max_primer_count_valid( cell_val ) {
@@ -168,14 +172,15 @@ function tims_problem() {
     return csv_string;
 }
 
-function load_library_from_table( library, scp_value, max_primers_total, max_primers_per_stretch ) {
+function load_library_from_table( library, scp_value, max_primers_total ) {
     // turn the user-provided input into a CSV string
     var rows = [];
     var trs = $('#aacounts tbody').find('tr');
     var allow_mdcs = $('#primerboundary_row').is(':visible');
 
     library.max_oligos_total = allow_mdcs ? max_primers_total : 0;
-    library.max_oligos_per_stretch = allow_mdcs ? max_primers_per_stretch : 0;
+
+    // library.max_oligos_per_stretch = allow_mdcs ? max_primers_per_stretch : 0;
 
     for ( var i=0; i < trs.length; ++i ) {
         var tds = $(trs[i]).find('td');
@@ -757,33 +762,28 @@ function validate_inputs_and_launch( launch_button ) {
     if ( ! scp_valid ) { any_errors = true; }
 
     var libsize_upper = $('#libsize_upper');
-    var libsize_lower = $('#libsize_lower');
     var libsize_upper_is_valid = validate_cell( libsize_upper, libsize_upper_valid );
     var libsize_upper_val;
-    var libsize_lower_val;
     if ( ! libsize_upper_is_valid ) {
         any_errors = true;
     }
     else {
         libsize_upper_val = parseFloat( $(libsize_upper).val() );
-        var lisize_lower_is_valid = validate_cell( libsize_lower, function( cell_val ) { return libsize_lower_valid( libsize_upper_val, cell_val ); } );
-        if ( ! libsize_lower_valid ) {
-            any_erors =  true;
-        } else {
-            libsize_lower_val = parseFloat( $(libsize_lower).val() );
-        }
+    }
+
+    var nsolutions_div = $('#nsolutions');
+    var nsolutions_is_valid = validate_cell( nsolutions_div, nsolutions_valid );
+    var nsolutions = $('#nsolutions').val();
+    if ( nsolutions === "" ) {
+        nsolutions = 1;
+    } else {
+        nsolutions = parseInt( nsolutions );
     }
 
     var max_primers_total = $('#max_primers_total');
     if ( ! validate_cell( max_primers_total, max_primer_count_valid ) ){
         any_errors = true;
     }
-
-    var max_primers_per_stretch = $('#max_primers_per_stretch');
-    if ( ! validate_cell( max_primers_per_stretch, max_primer_count_valid ) ) {
-        any_errors = true;
-    }
-
 
     if ( any_errors ) {
         alert( "Errors in inputs" );
@@ -795,10 +795,6 @@ function validate_inputs_and_launch( launch_button ) {
         max_primers_total_val = 0;
     }
 
-    var max_primers_per_stretch_val = parseInt( $(max_primers_per_stretch).val() );
-    if ( max_primers_per_stretch_val !== max_primers_per_stretch_val ) {
-        max_primers_per_stretch_val = 0;
-    }
 
     // always consider the stop codon penalty to represent a negative number
     var scp_val = $(scp).val();
@@ -816,14 +812,14 @@ function validate_inputs_and_launch( launch_button ) {
     setTimeout( function () {
         var starttime = new Date().getTime();
         var library = AALibrary();
-        load_library_from_table( library, scp_val, max_primers_total_val, max_primers_per_stretch_val );
+        load_library_from_table( library, scp_val, max_primers_total_val );
         library.compute_smallest_diversity_for_all_errors();
         if ( verify_solution_exists( library )) {
-            library.optimize_library( libsize_upper_val );
-            if ( libsize_lower_val != libsize_lower_val ) {
+            library.optimize_library( libsize_upper_val, nsolutions );
+            if ( nsolutions === 1 ) {
                 var error_list = [ library.find_minimal_error_beneath_diversity_cap( libsize_upper_val ) ];
             } else {
-                var error_list = library.errors_and_ndcs_in_diversity_range( libsize_upper_val, libsize_lower_val );
+                var error_list = library.find_errors_and_ndcs_beneath_diversity_cap( libsize_upper_val, nsolutions );
                 console.log( "Error list: ", error_list.join(",") );
             }
             var stoptime = new Date().getTime();
