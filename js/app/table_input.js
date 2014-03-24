@@ -57,7 +57,7 @@ function enable_or_disable_mdcs( allow_mdcs ) {
     //alert( $(allow_mdcs).text() );
     $(('#primerboundary_row')).toggle();
     $(('#maxdcs_row')).toggle();
-    $(('#max_extra_dcs_input')).toggle();
+    $(('#max_primers_total_div')).toggle();
     
     if ( $(allow_mdcs).text() === "Allow Mult. Deg. Codons" ) {
         $(allow_mdcs).button( "option", "label", "Disable Mult. Deg. Codons" );

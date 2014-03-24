@@ -112,7 +112,7 @@
         <span class=subheader>Citation</span>
         <p>
         If you use this program in your work, please cite:<br>
-        Leaver-Fay, Jacobs, Yumerefendi, & Kuhlman (2013) <i>in preparation</i>
+        Leaver-Fay, Jacobs, Yumerefendi, & Kuhlman (2014) <i>in preparation</i>
         </p>
         
         <p>
@@ -336,21 +336,21 @@
                 <br/><br/>
                 <div>
                     <label for=libsize_upper>*Library size upper limit:</label>
-                    <input id=libsize_upper title="Required field. The maximum allowable DNA diversity for the generated degenerate codons" type=text size=8 value="3.2e8">
+                    <input id=libsize_upper title="Required field. The maximum allowable DNA diversity for the generated degenerate codons" type=text size=8 value="">
                 </div>
 
                 <div>
                     <label for=nsolutions># Requested Solutions:</label>
-                    <input id=nsolutions title="Optional field. The number of solutions to returned.  The optimal solution will always be returned " type=text size=8>
+                    <input id=nsolutions title="Optional field. The number of solutions to returned.  The optimal solution will always be returned, so this field can be left blank to indicate that only the optimal solution should be returned." type=text size=8>
                 </div>
 
                 <div>
                     <label for=stop_codon_penalty>Universal stop codon penalty:</label>
                     <input id=stop_codon_penalty title='Optional field. Stop codon penalty applied at all positions; overrides penalties given in the table.  Must be either empty, an integer, or an exclamation mark ("!").' type=text size=8>
                 </div>
-		<div>
+		<div id=max_primers_total_div>
 		    <label for=max_primers_total>Maximum primers total:</label>
-		    <input id=max_primers_total title="How many primers are you willing to purchase to construct your library?" size=8 value="15">
+		    <input id=max_primers_total title="How many primers are you willing to purchase to construct your library?" size=8 value="">
 		</div>
 		<!-- <div>
 		    <label for=max_primers_per_stretch>Maximum primers for a single stretch:</label>
