@@ -441,8 +441,10 @@ function AALibrary() {
         var row2 = lines[1];
         var row2cols = row2.split(",").slice(1);
         var last_rep = 0;
+
         // the first position is always considered to be the start of a stretch
         this.n_stretches = 1;
+        this.stretch_reps[0] = 0;
         for ( var i=1; i < this.n_positions; ++i ) {
             if ( row2cols[i] === "|" ) {
                 last_rep = i;
