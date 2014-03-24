@@ -180,7 +180,7 @@ function load_library_from_table( library, scp_value, max_primers_total ) {
 
     library.max_oligos_total = allow_mdcs ? max_primers_total : 0;
 
-    // library.max_oligos_per_stretch = allow_mdcs ? max_primers_per_stretch : 0;
+    library.max_oligos_per_stretch = allow_mdcs ? max_primers_total : 0;
 
     for ( var i=0; i < trs.length; ++i ) {
         var tds = $(trs[i]).find('td');
