@@ -210,7 +210,7 @@ function load_library_from_table( library, scp_value, max_primers_total, max_pri
     }
     var csv_string = rows.join( "\n" );
 
-    console.log( csv_string );
+    //console.log( csv_string );
     library.load_library( csv_string );
 }
 
@@ -291,7 +291,7 @@ function create_csv_from_table() {
         var tds = $(trs[i]).find('td');
         for ( var j = 1; j < tds.length; ++j ) {
             var jval = $($(tds[j]).find("input")[0]).val();
-            console.log( "row " + i + " column " + j + " : " + jval );
+            //console.log( "row " + i + " column " + j + " : " + jval );
             row_i.push( jval );
         }
         table_contents.push( row_i.join(",") );

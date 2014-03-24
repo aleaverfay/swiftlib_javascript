@@ -441,8 +441,9 @@ function AALibrary() {
         var row2 = lines[1];
         var row2cols = row2.split(",").slice(1);
         var last_rep = 0;
+        // the first position is always considered to be the start of a stretch
         this.n_stretches = 1;
-        for ( var i=0; i < this.n_positions; ++i ) {
+        for ( var i=1; i < this.n_positions; ++i ) {
             if ( row2cols[i] === "|" ) {
                 last_rep = i;
                 ++this.n_stretches;
@@ -474,6 +475,7 @@ function AALibrary() {
         // as has been allowed at that position, otherwise there is no point in
         // entertaining that many degenerate codons at all.
         if ( this.max_oligos_per_stretch < this.max_dcs_per_pos ) {
+            console.log( "Increasing max_oligos_per_stretch to " + this.max_oligos_per_stretch );
             this.max_oligos_per_stretch = this.max_dcs_per_pos;
         }
 
@@ -482,6 +484,7 @@ function AALibrary() {
         // otherwise, there is no point in looking at multiple degenerate codons at a single
         // position or multiple oligos to cover a single stretch.
         if ( this.max_oligos_total < this.n_stretches + this.max_oligos_per_stretch - 1 ) {
+            console.log( "Increasing max_oligos_total to " + this.max_oligos_total + " ( " + this.n_stretches + " + " + this.max_oligos_per_stretch + " - 1)");
             this.max_oligos_total = this.n_stretches + this.max_oligos_per_stretch - 1;
         }
 
@@ -490,7 +493,7 @@ function AALibrary() {
         for ( var i=0; i < 21; ++i ) {
             var line = lines[ i + 3 ];
             var vals = line.split(",").slice(1);
-            console.log( "vals " + i.toString() + " " + vals.toString() );
+            //console.log( "vals " + i.toString() + " " + vals.toString() );
             var iiobs = 0;
             for ( var j=0; j < vals.length; ++j ) {
                 var ijval = vals[j];
@@ -701,7 +704,7 @@ function AALibrary() {
                     jlex.upper_diagonal_increment();
                 }
                 this.errors_for_n_dcs_for_position[i][j].sort( function(a,b){return a-b} );
-                console.log( "errors for " + i + " " + j + " " + this.errors_for_n_dcs_for_position[i][j] );
+                //console.log( "errors for " + i + " " + j + " " + this.errors_for_n_dcs_for_position[i][j] );
             }
         }
     }
@@ -900,7 +903,7 @@ function AALibrary() {
                                 } // for nn
                             } // for mm
                             if ( lldivmin !== this.infinity ) {
-                                if ( ll < 40 ) console.log( "  divmin[" + ii + ","+jj+","+kk+","+ll + "] = " + lldivmin );
+                                //if ( ll < 40 ) console.log( "  divmin[" + ii + ","+jj+","+kk+","+ll + "] = " + lldivmin );
                                 // record diveristy-minimum and traceback info
                                 kkdpdivmin   [ ll ] = lldivmin;
                                 kkdptraceback[ ll ] = [ lldivmin_iierror, lldivmin_iindcs, lldivmin_iim1ndcs ];
@@ -974,7 +977,7 @@ function AALibrary() {
                                 } // for nn
                             }// for mm
                             if ( lldivmin !== this.infinity ) {
-                                if ( ll < 40 ) console.log( "  divmin[" + ii + ","+jj+","+kk+","+ll + "] = " + lldivmin );
+                                //if ( ll < 40 ) console.log( "  divmin[" + ii + ","+jj+","+kk+","+ll + "] = " + lldivmin );
                                 kkdpdivmin[    ll ] = lldivmin;
                                 kkdptraceback[ ll ] = [ lldivmin_iierror, lldivmin_iindcs, lldivmin_iim1ndcs ];
                             }
@@ -1008,7 +1011,7 @@ function AALibrary() {
                 var kk_dp_divmin = jj_dp_divmin[ kk ];
                 for ( var ll = 0; ll <= this.error_span; ++ll ) {
                     if ( ! kk_dp_divmin.hasOwnProperty(ll) ) continue;
-                    console.log( " diversity given error level: " + jj + " " + kk + " " + ll + " " + kk_dp_divmin[ll] );
+                    //console.log( " diversity given error level: " + jj + " " + kk + " " + ll + " " + kk_dp_divmin[ll] );
                     var lldiversity = kk_dp_divmin[ll];
                     if ( lldiversity > log_diversity_cap ) continue;
                     if ( best_error === this.infinity || ll < best_error ) {
