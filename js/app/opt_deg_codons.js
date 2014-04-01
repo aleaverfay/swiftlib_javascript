@@ -261,7 +261,7 @@ function DegenerateCodon()  {
             "0110" : "S",
             "1100" : "M",
             "0011" : "K",
-            "1010" : "P",
+            "1010" : "R",
             "0101" : "Y",
             "0111" : "B",
             "1011" : "D",
@@ -269,6 +269,10 @@ function DegenerateCodon()  {
             "1110" : "V",
             "1111" : "N"
         };
+        dc.names_to_bases = {};
+        for ( var bases in dc.degenerate_base_names ) {
+            dc.names_to_bases[ dc.degenerate_base_names[bases] ] = bases;
+        }
     }
     init( dc );
 
@@ -285,6 +289,26 @@ function DegenerateCodon()  {
         return output_codon_string;
     };
 
+
+    dc.validate_codon_string = function( codon_string ) {
+        if ( codon_string.length != 3 ) return false;
+        for ( var i = 0; i < 3; ++i ) {
+            if ( ! this.names_to_bases.hasOwnProperty( codon_string[i] ) ) return false;
+        }
+        return true;
+    }
+
+    dc.set_from_codon_string = function( codon_string ) {
+        this.reset();
+        for ( var i = 0; i < 3; ++i ) {
+            var ibases = this.names_to_bases[ codon_string[i] ];
+            for ( var j = 0; j < 4; ++j ) {
+                if ( ibases[j] === "1" ) {
+                    this.set_pos( i, j );
+                }
+            }
+        }
+    }
 
     dc.set_pos = function ( codon_pos, base ) {
         if ( ! this.pos[ codon_pos ][ base ] ) {
