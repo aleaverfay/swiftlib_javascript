@@ -1,0 +1,418 @@
+<html>
+<head>
+
+<!--
+<link rel="stylesheet" type="text/css" href="http://akottr.github.io/css/reset.css" />
+<link rel="stylesheet" type="text/css" href="http://akottr.github.io/css/akottr.css" />
+-->
+
+<link rel="stylesheet" href="css/themes/smoothness/jquery-ui-1.10.3.custom.min.css">
+<link rel="stylesheet" href="css/style.css">
+<link href='http://fonts.googleapis.com/css?family=Berkshire+Swash' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" type="text/css" href="css/dragtable.css" />
+
+<script src="js/lib/jquery-1.10.2.min.js"></script>
+<script src="js/lib/jquery-ui-1.10.3.custom.min.js"></script>
+<script src="js/lib/jquery.scrollIntoView.js"></script>
+<script src="js/lib/jquery.dragtable.js"></script>
+<script src="http://ajax.aspnetcdn.com/ajax/jquery.validate/1.11.1/jquery.validate.js"></script>
+
+<script src="js/app/score_library.js"></script>
+<script src="js/app/opt_deg_codons.js"></script>
+<script src="js/app/main3.js"></script>
+
+</head>
+<body>
+
+<h1>SwiftLib</h1>
+<h2>A web-based tool for rapid optimization of degenerate codons</h2>
+
+<div id="accordion">
+    <h3><a href="#">Details</a></h3>
+    <div>
+        <span class=subheader>Purpose</span>
+        <p>
+        This program optimizes a degenerate codon library to cover the desired
+        set of amino acids at several positions while staying within a diversity
+        limit for the library.  It is a fast way to generate small libraries.
+        </p>
+        
+        <p>
+        The typical case for which we imagine SwiftLib to be useful is this: imagine
+        that you have constructed 100 redesigned models of a particular
+        protein where you allowed 15 residues to mutate. For position 82 (one of
+        the residues you allowed to mutate), alanine appeared 10 times, arginine
+        35 times, lysine 25 times, leucine 20 times, asparagine 5 times, tryptophan
+        3 times, and valine twice and similar distributions were seen at the other
+        14 positions.  (You would enter all of these counts in SwiftLib's table below.)
+	Let's say you're aiming to create a library for yeast display
+        and want to ensure that you don't exceed a (DNA) diversity of 1e7.
+        In this case, you would rather have a library that excluded tryptophan at
+	position 82 than one that excluded arginine.  Trypotophan's exclusion represents
+	<i>error</i>: you wanted something, but you couldn't get it.  The goal of
+	this program is to find the assignment of degenerate codons within the
+	given diversity limit that yields the minimal error over all positions being
+	randomized.
+        </p>
+
+	<p>
+	Additionally, it is possible to ask the algorithm to allow multiple degenerate
+	codons at one or more positions.  You simply indicate the primer boundaries and
+	how many oligos you are willing to buy. The algorithm will choose which positions
+	to use multiple degenerate codons at to get the best coverage.  The number of oligos
+	that must be purchased to cover the randomized residues
+	that lie inside the same primer boundaries is the product of the number of degenerate
+	codons used at each of those positions.  E.g. if there are three residues that are part
+	of the same stretch using, 2, 3, and 4 degenerate codons, then to cover all combinations,
+	2*3*4 = 24 oligos would have to be purchased. One of the more expensive parts of
+	considering multiple degenerate codons is enumerating all combinations of degenerate
+	codons; allowing <i>i</i> degenerate codons at a single position requires looking at
+	<i>(15<sup>3</sup>)<sup>i</sup></i> combinations.  For this reason we do not recommend
+	using more than 4 degenerate codons at any one position.
+	</p>
+
+        <span class=subheader>Algorithm</span>
+        <p>
+        The program works by dynamic programming.  If all of the errors are integers,
+        then it is possible to ask, for each position, what degenerate codon has
+        the smallest diversity given that it produces a given error.  The smallest
+        library for positions [1..<i>i</i>] given a particular error can be readily
+        computed using a simple recurrence.  The best library is the one with the smallest
+        error with a diversity below the desired cap.  The running time is <i>O(n<sup>2</sup>m<sup>2</sup>)</i> for
+        <i>n</i> positions and <i>m</i> error gradations.  In the case above, n=15, and
+        m=100 (the maximum error would be 100 given by a codon that doesn't contain any
+        of the desired amino acids; the larger the maximum error the longer the running time).
+	Analysis for the multiple-degenerate-codon algorithm is slightly more complicated
+	and will be published shortly.
+        </p>
+        
+        <p>
+        Privacy?  This program is implemented in JavaScript and therefore runs inside your browser.
+        It does not send any data anywhere.  You do not need to worry about anyone decoding the
+        library you're creating.
+        </p>
+
+        <span class=subheader>Input</span>
+        <p>
+        The input for SwiftLib is a table of positions for which you would like
+        to vary in your library, and a numeric preference for each amino acid at
+        these positions that you would like to favor, or disfavor. So, given the
+        above example, the input would be a table with 15 columns (1 for each residue),
+        and the numeric preference for each amino acid would be the number of occurances
+        of that amino acid at that position. Aside from using positive integers to favor
+        an amino acid, one can also use negative integers to disfavor an amino acid
+        at a given positions. Furthermore one can use the '*' and '!' wildcards to
+        specify that the amino acid is required ('*') or forbidden ('!') at the given position.
+        Empty fields in the table will be treated as if they contain a '0'
+        
+        For convenience, SwiftLib allows the creation of this table manually, through a CSV
+        format, or through a collections of FASTA    formatted sequences. 
+        </p>
+
+        <span class=subheader>Citation</span>
+        <p>
+        If you use this program in your work, please cite:<br>
+        Leaver-Fay, Jacobs, Yumerefendi, & Kuhlman (2014) <i>in preparation</i>
+        </p>
+        
+        <p>
+        Please direct questions to: leaverfa at email dot unc dot edu.
+        </p>
+    </div>
+
+</div>
+
+<br>
+
+<div id="tabs">
+    <ul>
+        <li><a href="#manual_tab">Manual input</a></li>
+        <li><a href="#csv_tab">CSV input</a></li>
+        <li><a href="#fasta_tab">FASTA input</a></li>
+        <li><a href="#msf_tab">MSF input</a></li>
+    </ul>
+    <div id=manual_tab class=hscroll>
+        <!--<form id="mainForm" method="get" action="">-->
+            <div id=table_aacounts class=table_input>
+                <table class=mytable id=aacounts>
+                    <thead>
+		        <!--
+                        <tr class=firstrow>
+                            <th></th>
+                            <th>Delete</th>
+                        </tr> -->
+                        <tr class=firstrow>
+                            <th></th>
+                            <th class="accept">Drag</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class=firstrow>
+                            <td data-header="resnum">Residue Number:</td>
+                            <td data-header="seqpos1"><input class=seqposcell type="text" name="test" size=4></td>
+                        </tr>
+			<tr id=primerboundary_row>
+			    <td data-header="Primer" >Primer Boundary</td>
+			    <td><input class=primercell type="text" name="primer" size=4 value="-" ></td>
+			</tr>
+			<tr id=maxdcs_row>
+			    <td data-header="maxdcs" >Max DCs</td>
+			    <td><input class=maxdccell type="text" name="maxdc" size=4 value="1" ></td>
+                        <tr>
+                            <td>A (Alanine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>C (Cysteine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>D (Apsartic Acid)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>E (Glutamic Acid)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>F (Phenylalanine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>G (Glycine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>H (Histidine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>I (Isoleucine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>K (Lysine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>L (Leucine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>M (Methionine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>N (Asparagine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>P (Proline)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Q (Glutamine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>R (Arginine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>S (Serine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>T (Threonine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>V (Valine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>W (Tryptophan)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Y (Tyrosine)</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>STOP</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                        </tr>
+			<tr>
+                            <td>Solution</td>
+                            <td>
+                                <input class=aacountcell type="text" name="test" size=4>
+                            </td>
+                    </tbody>
+                </table>
+            </div>
+            <div class=instructions>
+                <span class=subheader>Manual input instructions</span>
+                <ul>
+                    <li> Each column in the table below represents one position, and each cell in the column (except for the first) represents one amino acid at that position.
+                    <li> The "Add Position" button will add a new column to the right.
+                    <li> The "Delete Position" button will delete the right-most column.  All data in the column will be lost when you hit this button, so be careful.
+		    <li> Columns may be dragged left or right by dragging on the word "Drag" at the top of the column.
+                    <li> You must provide a label for each column in the "Res" row.  This is for output purposes and any label will do (e.g. 208).
+                    <li> Positive integers should be given in the table for amino acids that you want to appear.
+                    <li> Negative integers can be given for amino acids you want to penalize (but not forbid).
+                    <li> A star (*) can be given for amino acids that you want to require.
+                    <li> An explanation point (!) can be given for amino acids that you want to forbid.
+                    <li> Empty cells will be treated as if they contain a "0" (except for the "Res" row).
+                    <li> Any ill-formatted cell on this page will be highlighted in pink.
+                    <li> An upper bound on the library size must be given.  This can be given in scientific notation (e.g. 1e7).
+                </ul>
+                <span class=subheader>Multiple degenerate codon instructions</span>
+		<ul>
+		    <li> Activate the multiple-degenerate-codon algorithm by clicking on the "Allow Mult. Deg. Codons" button below.
+		         This will add two rows to the table.
+		    <li> The user must define primer boundaries in the "Primer Boundary" row.
+		    <li> Indicate the first residue in a primer with the "|" (pipe) symbol.
+		    <li> Indicate that a residue belongs in the same primer as the previous residue with the "-" (dash) symbol.
+		    <li> The maximum number of degenerate codons ("Max DCs") to consider at each position should an integer;
+		      enumerating the combinations of degenerate codons when more than 2 are requested at any position can
+		      be very time consuming.  5 is the recommended maximum.
+		    <li> Allowing multiple degenerate codons means purchasing extra oligos (primers).  Indicate the number of
+		      oligos you are willing to purchase total in the "Maximum Primers Total" box below the table.  This number
+		      should be more than the number of stretches you have, and will be increased to the number of stretches
+		      you have if a smaller value is given.  If you have 5 stretches and say you are willing to purchase 6 oligos,
+		      then the algorithm will only be able to use multiple degenerate codons at a single position.
+		</ul>
+                <span class=subheader>Saving Data</span>
+                    <p>
+                    To save the data you have entered in the table below for future sessions, switch to the "CSV Input" tab.
+                    This will display your data in a "comma separated value" (CSV) format.  Copy your data
+                    out of the text box that appears and put it in a document for later use.  You may load data into the table
+                    by pasting the data from a previously-saved table and clicking on the "Update Table" button (which is
+                    only visible in the "CSV Input" tab).  If you get an error message saying that it found 46 columns instead of
+                    23, make sure you clear out the text window before you paste your data in it.		    
+                    </p>
+            </div>
+            <div id=global_settings>
+                <button id="reportbutton">Generate Report!</button>
+            </div>
+            <!--</form>-->
+    </div>
+
+    <div id=csv_tab>
+        <div id=text_aacounts class=table_input>
+            <textarea id=csvaacounts rows="22" cols="50" ></textarea>
+            <br>
+            <button id="table_from_csv">Update Table</button>
+            <div id="update_result"></div>
+        </div>
+        <div class=instructions>
+            <span class=subheader>CSV input instructions</span>
+            <p>
+            To use the "comma separated value" (CSV) format simply pasted your comma-delimited data in the textbox.
+            The input text <b>must</b> take the same form as the manual input table (22 rows, the first
+            being the residue positions, the next 20 being the amino acids in alphabetical order by one-letter
+            code, the last being the stop penalty for that position). Once completed, click the 'Update Table'
+            button to populate the table with your inputs.
+            </p>
+
+            <p>
+            Once populated, one must still set the diversity bounds and the universal stop codon penalty (if desired)
+            </p>
+        </div>
+    </div>
+    <div id=fasta_tab class=table_input>
+        <div class=table_input>
+            <textarea id=fasta rows="30" cols="50"></textarea>
+            <br>
+            <button id="table_from_fasta">Update Table</button>
+            <div id="fasta_errors"></div>
+        </div>
+        <div class=instructions>
+            <span class=subheader>FASTA input instructions</span>
+            <p>
+            To use the FASTA input, paste FASTA formatted sequences in the textbox. All sequences
+            must be the same length. Once completed, clicking the 'Update Table' button with populate
+            the input table with the frequency of each amino acid at each position in the sequence.
+            Positions which never vary are excluded from the table.
+            </p>
+
+            <p>
+            Once populated, one must still set the diversity bounds and the universal stop codon penalty (if desired)
+            </p>
+        </div>
+    </div>
+    <div id=msf_tab class=table_input>
+        <div class=table_input>
+            <textarea id=msf rows="30" cols="50"></textarea>
+            <br>
+            <button id="table_from_msf">Update Table</button>
+            <div id="msf_errors"></div>
+        </div>
+        <div class=instructions>
+            <span class=subheader>MSF input instructions</span>
+            <p>
+            To use the MSF input, paste a MSF formatted sequence alignment in the textbox. 
+            </p>
+
+            <p>
+            Once populated, one must still set the diversity bounds and the universal stop codon penalty (if desired)
+            </p>
+        </div>
+    </div>
+</div>
+<br>
+
+
+<br><br>
+<div id="update_result"></div>
+<div id=resultdiv ></div>
+</body>
+</html>
+
+<!-- Local Variables:
+sgml-basic-offset : 4
+js-indent-level: 4
+indent-tabs-mode: nil
+End: -->
