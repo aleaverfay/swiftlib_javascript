@@ -831,7 +831,8 @@ function AALibrary() {
         }
 
         // Position 0: copy this.divmin_for_error_for_n_dcs[0] into this.dp_divmin
-        for ( var jj=1; jj <= this.max_dcs_for_pos[0]; ++jj ) {
+        var pos0jjlimit = Math.min( this.max_oligos_per_stretch, this.max_dcs_for_pos[0] );
+        for ( var jj=1; jj <= pos0jjlimit; ++jj ) {
             for ( var ll=0; ll <= this.max_per_position_error; ++ll ) {
                 if ( this.divmin_for_error_for_n_dcs[0][jj][ll] !== this.infinity ) {
                     this.dp_divmin[0][jj][jj][ll]    = this.divmin_for_error_for_n_dcs[0][jj][ll];
