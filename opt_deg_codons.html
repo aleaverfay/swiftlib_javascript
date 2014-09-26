@@ -129,6 +129,7 @@
         <li><a href="#manual_tab">Manual input</a></li>
         <li><a href="#csv_tab">CSV input</a></li>
         <li><a href="#fasta_tab">FASTA input</a></li>
+        <li><a href="#clustal_tab">ClustalW input</a></li>
         <li><a href="#msf_tab">MSF input</a></li>
     </ul>
     <div id=manual_tab class=hscroll>
@@ -406,6 +407,26 @@
             </p>
         </div>
     </div>
+    <div id=clustal_tab class=table_input>
+        <div class=table_input>
+            <textarea id=clustal rows="30" cols="50"></textarea>
+            <br>
+            <button id="table_from_clustal">Update Table</button>
+            <div id="clustal_errors"></div>
+        </div>
+        <div class=instructions>
+            <span class=subheader>Clustal W input instructions</span>
+            <p>
+            To use the the ClustalW input, paste a <a href="http://web.mit.edu/meme_v4.9.0/doc/clustalw-format.html">ClustalW formatted</a>
+            sequence alignment in the textbox. Please note that any position in the alignment that has only a single Amino Acid at that position
+            will be removed from the table.
+            </p>
+
+            <p>
+            Once populated, one must still set the diversity bounds and the universal stop codon penalty (if desired)
+            </p>
+        </div>
+    </div>
     <div id=msf_tab class=table_input>
         <div class=table_input>
             <textarea id=msf rows="30" cols="50"></textarea>
@@ -420,7 +441,9 @@
             </p>
 
             <p>
-            Once populated, one must still set the diversity bounds and the universal stop codon penalty (if desired)
+            Once populated, one must still set the diversity bounds and the universal stop codon penalty (if desired).
+            Please note that any position in the alignment that has only a single Amino Acid at that position
+            will be removed from the table.
             </p>
         </div>
     </div>

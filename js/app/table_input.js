@@ -539,6 +539,46 @@ function populate_table_from_fasta () {
     return;
 }
 
+function populate_table_from_clustal () {
+    var clustal_contents = $('#clustal').val();
+    clustal_contents = clustal_contents.split('\n');
+    var sequences = {};
+    for(var i=0; i < clustal_contents.length; ++i) {
+        var cur_line = clustal_contents[i].trim().split(/\s+/);
+        if( i == 0 ) {
+            if(cur_line[0] != "CLUSTALW" && cur_line[0] != "CLUSTAL") {
+                $('#clustal_errors').html('<p>Malformed Clustal alignment data - the first line of the file start with "CLUSTAL"</p>').css("color","red").show();
+                return;
+            }
+        }
+        else {
+            //Skip blank lines
+            if(cur_line.length == 1 && cur_line[0] == "") { continue; }
+
+            //Skip alignment lines (only contain whitespace, ':', '*', and '.' characters)
+            if(clustal_contents[i].search(/[^\s:\.\*]/) == -1) {
+                continue;
+            }
+
+            var sequence_name = cur_line[0];
+            var sequence = cur_line[1];
+            if(sequence.length > 60) {
+                $('#clustal_errors').html('<p>Malformed Clustal W alignment data - more than 60 characters found on sequence line '+(i+1)+'</p>').css("color","red").show();
+                return;
+            }
+            if(sequences[sequence_name]) {
+                sequences[sequence_name] = sequences[sequence_name] + sequence;
+            }
+            else {
+                sequences[sequence_name] = sequence;
+            }
+        }
+    }
+    console.log(sequences);
+    populate_table_from_sequences_object(sequences, $('#clustal_errors'));
+    return;
+}
+
 function populate_table_from_msf () {
     var msf_contents = $('#msf').val().split("//");
     if(msf_contents.length < 2) {
@@ -546,7 +586,7 @@ function populate_table_from_msf () {
         return;
     }
     msf_contents = msf_contents[1].split('\n');
-    sequences = {}
+    sequences = {};
     for(var i=0; i < msf_contents.length; ++i) {
         var cur_line = msf_contents[i].trim().split(/\s+/);
         if(!(cur_line.length == 1 && cur_line[0] == "")) {
@@ -564,8 +604,14 @@ function populate_table_from_msf () {
             }
         }
     }
+    populate_table_from_sequences_object(sequences, $('#msf_errors'));
+    return;
+}
 
+
+function populate_table_from_sequences_object(sequences, error_div) {
     //Get the sequence length
+    console.log(error_div);
     var seq_length = 0;
     for( var seq_name in sequences ) {
         if(sequences.hasOwnProperty(seq_name)) {
@@ -597,8 +643,8 @@ function populate_table_from_msf () {
             if(cur_length != seq_length) {
                 console.log("seq length: " + seq_length);
                 console.log("cur length: " + cur_length);
-                var msg = "<p>All FASTA sequences must be the same length. Sequence '" + seq_name + "' is not the same size as previous sequences</p>";
-                $('#msf_errors').html(msg).css("color","red").show();
+                var msg = "<p>All sequences must be the same length. Sequence '" + seq_name + "' is not the same size as previous sequences</p>";
+                error_div.html(msg).css("color","red").show();
                 return;
             }
 
@@ -668,7 +714,7 @@ function populate_table_from_msf () {
                         break;
                     default:
                         var msg = "<p>Invalid amino acid code " + cur_seq[j] + " in sequence " + i+1 + " position " + j+1 + "</p>";
-                        $('#fasta_errors').html(msg).css("color","red").show();
+                        error_div.html(msg).css("color","red").show();
                         return;
                 }
             }
@@ -676,8 +722,8 @@ function populate_table_from_msf () {
     }
 
     //remove non-variable positions
-	var nvariable_positions = 0;
-	var nremoved_positions = 0;
+    var nvariable_positions = 0;
+    var nremoved_positions = 0;
     for( var i=0; i < seq_length - nremoved_positions; ++i ) {
         var num_aas=0;
         for( var j=3; j < 23; ++j ) {
@@ -689,19 +735,19 @@ function populate_table_from_msf () {
             for( var j=0; j < 24; ++j ) {
                 table_contents[j].splice(i, 1);
             }
-			--i;
-			++nremoved_positions;
-    	}
-		else {
-			nvariable_positions++
-		}
+            --i;
+            ++nremoved_positions;
+        }
+        else {
+            nvariable_positions++
+        }
     }
 
-	if( nvariable_positions <= 0 ) {
-		var msg = "<p>You must have variability in at least one positions in the set of sequences</p>";
-		$('#msf_errors').html(msg).css("color","red").show();
-    	return;
-	}
+    if( nvariable_positions <= 0 ) {
+        var msg = "<p>You must have variability in at least one positions in the set of sequences</p>";
+        error_div.html(msg).css("color","red").show();
+        return;
+    }
 
     //resize the table
     var trs = $('#aacounts tbody').find('tr');
@@ -725,8 +771,7 @@ function populate_table_from_msf () {
             $($(tds[j+1]).find("input")[0]).val( row_i[j] );
         }
     }
-    $('#msf_errors').html('<p>Successfully updated the table</p>').css("color","green").show();
-    return;
+    error_div.html('<p>Successfully updated the table</p>').css("color","green").show();
 }
 
 function handle_tab_vs_csv_change( rad_button ) {
