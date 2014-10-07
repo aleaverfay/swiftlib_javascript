@@ -883,6 +883,11 @@ function AALibrary() {
             for ( var ii=1; ii < this.n_positions; ++ii ) {
                 var iilastpos = ii === this.n_positions - 1;
 
+                // increment count_stretch reguardless of what happens with the max_per_position_error check below
+                if ( ii === this.stretch_reps[ ii ] ) {
+                    ++count_stretch;
+                }
+
                 // check that it would be possible to achieve an error of hh at position ii
                 if ( this.max_per_position_error * (ii+1) < hh ) continue;
 
@@ -894,7 +899,6 @@ function AALibrary() {
                 // one of two different recursions based on whether this is the
                 // first residue in a stretch
                 if ( ii === this.stretch_reps[ ii ] ) {
-                    ++count_stretch;
 
                     // iterate across the total number of oligos committed to up to position ii
                     // this can be at most count_stretch * this.max_oligos_per_stretch;
