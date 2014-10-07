@@ -25,6 +25,7 @@ function GeneticCodeMapper() {
 
     function init( gcm ) {
         gcm.base_to_index = { "A" : 0, "C" : 1, "G" : 2, "T" : 3 };
+        gcm.index_to_base = { 0 : "A", 1 : "C", 2 : "G", 3 : "T" };
         gcm.aastring = "ACDEFGHIKLMNPQRSTVWY";
         gcm.aamap = {} // map from the 1 letter code or the "STOP" string to an index
         for ( var i=0; i < gcm.aastring.length; ++i ) {
@@ -108,6 +109,8 @@ function GeneticCodeMapper() {
         }
     }
 
+    // The input parameter "codon" should be an array of size 3 with each element
+    // being either 'A', 'C', 'G' or 'T'
     gcm.codon_index = function( codon ) {
         var index = 0;
         for ( var i=0; i < 3; ++i ) {
@@ -115,6 +118,16 @@ function GeneticCodeMapper() {
         }
         return index;
     };
+
+    // The input parameter "codon" should be an array of size 3 with each element
+    // in the range between 0 and 3.
+    gcm.codon_index_from_base_inds = function( codon ) {
+        var index = 0;
+        for ( var ii = 0; ii < 3; ++ii ) {
+            index = index*4 + codon[ ii ];
+        }
+        return index;
+    }
 
     gcm.aastr_for_integer = function ( aaindex ) {
         if ( aaindex >= 0 && aaindex < 20 ) {
@@ -607,7 +620,7 @@ function AALibrary() {
         function useful_aaind_for_pos( aas, pos ) {
             var aaind = 0;
             for ( var i = 0; i < 21; ++i ) {
-                var iuseful = that.aa_counts[pos][i] > 0 || that.required[pos][i];
+                var iuseful = that.aa_counts[pos][i] !== 0 || that.required[pos][i];
                 aaind = 2 * aaind + ( aas[i] && iuseful ? 1 : 0 );
             }
             return aaind;
@@ -1157,12 +1170,33 @@ function AALibrary() {
     return library;
 }
 
+function desired_aa_count_for_position( library, position, dc ) {
+    var count_desired = 0;
+    var lex = LexicographicalIterator( dc.count_pos );
+    var codon_base_inds = [ 0, 0, 0 ];
+    while ( ! lex.at_end ) {
+        for ( var ii = 0; ii < 3; ++ii ) {
+            codon_base_inds[ ii ] = dc.which[ ii ][ lex.pos[ ii ] ];
+        }
+        var codon_index = library.gcmapper.codon_index_from_base_inds( codon_base_inds );
+        var aaind = library.gcmapper.mapper[ codon_index ];
+        if ( library.aa_counts[ position ][ aaind ] > 0 ) {
+            ++count_desired;
+        }
+        lex.increment();
+    }
+
+    return count_desired;        
+}
+
 function record_codon_data( position, codon_inds, library ) {
-    // three things we need:
+    // four things we need:
     // 1: the codon
     // 2: the amino acids that are represented
     // 2b: the counts from the original set of observations for each of the represented aas
     // 3: the amino acids and their counts in the original set of observations that are not represented
+    // 4: the fraction of the desired amino acids among the set of chosen codons; this weights AA's
+    //    according to how many times they are coded for.
 
     var codon_data = {}
 
@@ -1170,6 +1204,7 @@ function record_codon_data( position, codon_inds, library ) {
     var aas_present  = newFilledArray( 21, false ); //library.aas_for_degenerate_codon( degenerate_codon );
     var orig_obs = library.aa_counts[ position ];
     var codon_diversity = 0;
+    var desired_aas = 0;
 
     codon_data.orig_pos_string = library.orig_pos[ position ];
 
@@ -1178,6 +1213,7 @@ function record_codon_data( position, codon_inds, library ) {
         library.dclex.set_from_index( codon_inds[ii] );
         dc.set_from_lex( library.dclex );
         codon_diversity += dc.diversity();
+        desired_aas += desired_aa_count_for_position( library, position, dc );
         codons.push( dc.codon_string() );
         var iiaas = library.aas_for_dc[ codon_inds[ii] ];
         for ( var jj=0; jj < 21; ++jj ) {
@@ -1217,6 +1253,8 @@ function record_codon_data( position, codon_inds, library ) {
     codon_data.log_dna_diversity = Math.log( codon_diversity );
     codon_data.aa_count = aa_count;
     codon_data.log_aa_diversity = Math.log( aa_count );
+    codon_data.desired_aa_frac = desired_aas / codon_diversity;
+    console.log( "desired_aas " + desired_aas.toString() + " codon_diversity " + codon_diversity.toString() );
 
     return codon_data;
 }
@@ -1225,6 +1263,7 @@ function report_output_library_data( library, error_sequence ) {
     var dna_diversity_sum = 0;
     var aa_diversity_sum = 0;
     var output_library_data = {};
+    var desired_aa_product = 1;
     output_library_data.positions = [];
     output_library_data.error = 0;
     for ( var ii=0; ii < library.n_positions; ++ii ) {
@@ -1234,11 +1273,14 @@ function report_output_library_data( library, error_sequence ) {
         var codon_data =  record_codon_data( ii, ii_dc_list, library );
         dna_diversity_sum += codon_data.log_dna_diversity;
         aa_diversity_sum +=  codon_data.log_aa_diversity;
+        desired_aa_product *= codon_data.desired_aa_frac;
         output_library_data.positions.push( codon_data );
         output_library_data.error += output_library_data.positions[ ii ].error;
+        
     }
     output_library_data.dna_diversity = Math.exp( dna_diversity_sum );
     output_library_data.aa_diversity = Math.exp( aa_diversity_sum );
+    output_library_data.desired_aa_product = desired_aa_product;
     return output_library_data;
 }
 

@@ -250,19 +250,20 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
         var error_trace = library.traceback_from_starting_point( error_list[i][0], error_list[i][1], error_list[i][2] );
         var i_data = report_output_library_data( library, error_trace, diversity_cap );
         var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td><td># Oligos Total</td>" +
-                         "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td></tr><tr><td>",
+                         "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td><td>Percent Desired AAs</td></tr><tr><td>",
                          (i+1).toString(), "</td><td>",
                          error_list[i][2].toString(), "</td><td>",
                          error_list[i][0].toString(), "</td><td>",
                          i_data.dna_diversity.toExponential(3), "</td><td>",
-                         i_data.aa_diversity.toExponential(3), "</td></tr></table><br>" ];
+                         i_data.aa_diversity.toExponential(3), "</td><td>",
+                         ( i_data.desired_aa_product * 100 ).toFixed(2), "%</td></tr></table><br>" ];
         var table = [];
         if ( i === 0 ) {
             table.push( "<table id=scrollhere class=result_table>" );
         } else {
             table.push( "<table class=result_table>" );
         }
-        table.push( "<tr class=rtheader><td>Pos</td><td>Stretch</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td></tr>" );
+        table.push( "<tr class=rtheader><td>Pos</td><td>Stretch</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td><td>%desired</td></tr>" );
         var count_stretch = 0;
         for ( var j=0; j < library.n_positions; ++j ) {
             if ( library.stretch_reps[j] === j ) ++count_stretch
@@ -284,6 +285,7 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
             table.push( [ "<td>", j_pos.error.toString(), "</td>" ].join("") );
             table.push( [ "<td>", Math.round(Math.exp( j_pos.log_dna_diversity )), "</td>" ].join("") );
             table.push( [ "<td>", j_pos.aa_count, "</td>" ].join("") );
+            table.push( [ "<td>", ( 100 * j_pos.desired_aa_frac ).toFixed(0), "%</td>" ].join("" ) );
             table.push( "</tr>" );
         }
         table.push( "</table>" );
