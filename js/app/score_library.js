@@ -254,19 +254,20 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
         var error_trace = library.traceback_from_starting_point( error_list[i][0], error_list[i][1], error_list[i][2] );
         var i_data = report_output_library_data( library, error_trace, diversity_cap );
         var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td><td># Oligos Total</td>" +
-                         "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td></tr><tr><td>",
+                         "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td><td>Percent Desired AAs</td></tr><tr><td>",
                          (i+1).toString(), "</td><td>",
                          error_list[i][2].toString(), "</td><td>",
                          error_list[i][0].toString(), "</td><td>",
                          i_data.dna_diversity.toExponential(3), "</td><td>",
-                         i_data.aa_diversity.toExponential(3), "</td></tr></table><br>" ];
+                         i_data.aa_diversity.toExponential(3), "</td><td>",
+                         ( i_data.desired_aa_product * 100 ).toFixed(2), "%</td></tr></table><br>" ];
         var table = [];
         if ( i === 0 ) {
             table.push( "<table id=scrollhere class=result_table>" );
         } else {
             table.push( "<table class=result_table>" );
         }
-        table.push( "<tr class=rtheader><td>Pos</td><td>Stretch</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td></tr>" );
+        table.push( "<tr class=rtheader><td>Pos</td><td>Stretch</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td><td>%desired</td></tr>" );
         var count_stretch = 0;
         for ( var j=0; j < library.n_positions; ++j ) {
             if ( library.stretch_reps[j] === j ) ++count_stretch
@@ -288,6 +289,7 @@ function output_tables_from_error_values( library, error_list, diversity_cap )  
             table.push( [ "<td>", j_pos.error.toString(), "</td>" ].join("") );
             table.push( [ "<td>", Math.round(Math.exp( j_pos.log_dna_diversity )), "</td>" ].join("") );
             table.push( [ "<td>", j_pos.aa_count, "</td>" ].join("") );
+            table.push( [ "<td>", ( 100 * j_pos.desired_aa_frac ).toFixed(0), "%</td>" ].join("" ) );
             table.push( "</tr>" );
         }
         table.push( "</table>" );
@@ -768,17 +770,20 @@ function generate_report() {
     var dcs = [];
     load_library_from_table( library, dcs );
 
-    var output_html = [ "<table table id=scrollhere class=result_table><tr class rthreader><td>Pos</td><td>Stretch</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td></tr>" ];
+    var output_html = [ "<table table id=scrollhere class=result_table><tr class rthreader><td>Pos</td><td>Stretch</td><td>Codon</td><td>Present</td><td>Absent</td><td>Error</td><td># Codons</td><td># AA</td><td>Percent Desired AAs</td></tr>" ];
     var dc = DegenerateCodon();
     var count_stretch = 0;
     var log_total_na_size = 0;
     var log_total_aa_size = 0;
     var total_error = 0;
+    var desired_aa_product = 1;
+    
     for ( var i = 0; i < library.n_positions; ++i ) {
         if ( library.stretch_reps[i] === i ) ++count_stretch;
         var ihtml = [];
         var aas = newFilledArray( 21, false );
         var isize = 0;
+        var i_count_desired = 0;
         for ( var j = 0; j < dcs[i].length; ++j ) {
             var j_dc_string = dcs[i][j];
             dc.set_from_codon_string( j_dc_string );
@@ -787,8 +792,12 @@ function generate_report() {
             for ( var k = 0; k < 21; ++k ) {
                 aas[ k ] = aas[ k ] || jaas[ k ];
             }
+            i_count_desired += desired_aa_count_for_position( library, i, dc );
         }
         log_total_na_size += Math.log( isize );
+        var i_desired_aa_fraction = i_count_desired / isize;
+        desired_aa_product *= i_desired_aa_fraction;
+
         var aas_present = [];
         var inaapresent = 0;
         for ( var j = 0; j < 21; ++j ) {
@@ -811,6 +820,7 @@ function generate_report() {
         ihtml.push( [ "<td>", ierror.toString(), "</td>" ].join("") );
         ihtml.push( [ "<td>", isize.toString(), "</td>" ].join("") );
         ihtml.push( [ "<td>", inaapresent.toString(), "</td>" ].join("") );
+        ihtml.push( [ "<td>", ( i_count_desired / isize * 100 ).toFixed(2), "%</td>" ].join("") );
         ihtml.push( "</tr>" );
 
         output_html.push( ihtml.join("\n") );
@@ -819,6 +829,7 @@ function generate_report() {
     output_html.push( "<br>Total NA size: " + Math.round( Math.exp( log_total_na_size )).toExponential() );
     output_html.push( "<br>Total AA size: " + Math.round( Math.exp( log_total_aa_size )).toExponential() );
     output_html.push( "<br>Total error: " + total_error );
+    output_html.push( "<br>% Desired: " + ( desired_aa_product * 100 ).toFixed(2) );
     $('#resultdiv').html( output_html.join("\n") );
     $('#scrollhere').scrollIntoView();
 

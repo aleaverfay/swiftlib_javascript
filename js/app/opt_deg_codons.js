@@ -1184,7 +1184,7 @@ function desired_aa_count_for_position( library, position, dc ) {
         }
         var codon_index = library.gcmapper.codon_index_from_base_inds( codon_base_inds );
         var aaind = library.gcmapper.mapper[ codon_index ];
-        if ( library.aa_counts[ position ][ aaind ] > 0 ) {
+        if ( library.aa_counts[ position ][ aaind ] > 0 || library.required[ position ][ aaind ] ) {
             ++count_desired;
         }
         lex.increment();
