@@ -321,12 +321,14 @@ function create_csv_from_table() {
     return table_contents.join("\n");
 }
 
-function populate_table_from_csv() {
+function populate_table_from_csv( target_nrows ) {
+    target_nrows = 24;
+
     var csv_contents = $('#csvaacounts').val().split("\n");
     var csv_data = []
     var nrows = csv_contents.length;
-    if ( nrows != 24 ) {
-        var msg = "<p>Could not update table from CSV contents.  Expected to find 24 rows, but found " + nrows + "</p>";
+    if ( nrows != target_nrows ) {
+        var msg = "<p>Could not update table from CSV contents.  Expected to find " + target_nrows + " rows, but found " + nrows + "</p>";
         $('#update_result').html(msg).css("color","red").show();
         return;
     }

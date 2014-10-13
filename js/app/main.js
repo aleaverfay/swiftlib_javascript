@@ -36,7 +36,7 @@ $(document).ready(function () {
 	$('#add').click( add_column_to_aacounts );
 	$('#delcol').click( delete_column_from_aacounts );
 	$('#launchbutton').click( function() { validate_inputs_and_launch(this); } );
-	$("#table_from_csv").click( populate_table_from_csv );
+	$("#table_from_csv").click( function() { populate_table_from_csv(24) } );
 
 	$('#libsize_upper').blur( function() { validate_cell( this, libsize_upper_valid ); } );
 	update_table_validation_rules();

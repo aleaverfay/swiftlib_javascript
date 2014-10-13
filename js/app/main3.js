@@ -29,15 +29,15 @@ $(document).ready(function () {
 		dragaccept:'.accept'
 	});
 
-	$('#primerboundary_row').hide();
-	$('#maxdcs_row').hide();
+	// $('#primerboundary_row').hide();
+	// $('#maxdcs_row').hide();
 	$('#max_primers_total_div').hide();
 
 	$('#allow_mult_dcs').click( function() { enable_or_disable_mdcs( this ); } );
 	$('#add').click( add_column_to_aacounts );
 	$('#delcol').click( delete_column_from_aacounts );
 	$('#reportbutton').click( generate_report );
-	$("#table_from_csv").click( populate_table_from_csv );
+	$("#table_from_csv").click( populate_score_library_table_from_csv );
 
 	update_table_validation_rules();
 

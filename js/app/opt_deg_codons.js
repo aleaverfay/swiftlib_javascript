@@ -370,8 +370,11 @@ function DegenerateCodon()  {
     };
 
     dc.index_from_lex = function( lex ) {
-        // Get the index for a particular codon using a lexicographical iterator
-        // that's dimensioned from this.count_pos
+        // Get the index for a particular *codon* using a lexicographical iterator
+        // that's dimensioned from this.count_pos; this is useful when looking
+        // at all the individual codons perscribed by a degenerate codon.
+        // E.g., the index for a codon ACG, would be 0*16+1*4+2 = 6, and this
+        // codon would one of the many perscribed by the degenerate codon ACN.
         var codon_index = 0;
         for ( var i=0; i < 3; ++i ) {
             codon_index = codon_index * 4 + this.which[i][lex.pos[i]];
@@ -381,6 +384,9 @@ function DegenerateCodon()  {
 
     dc.set_from_lex = function ( lex ) {
         // Set the state for this degenerate codon using a lex that's iterating over all (2**4-1)**3 = 3375 codon options.
+        // This is not interchangable with the above function index_from_lex.
+        // To go from a degenerate-codon assignment to an index, use the function
+        // degenerate_codon_index below
         this.reset();
         for ( var i=0; i < 3; ++i ) {
             var posi = lex.pos[i]+1; // take "14" to mean "all 4 degenerate nucleotides" and "0" to mean "only A"
@@ -395,7 +401,20 @@ function DegenerateCodon()  {
             //console.log( "set from lex: " + this.pos.join(",") + " and count_pos: " + this.count_pos.join(",") )
         }
     }
+
+    dc.degenerate_codon_index = function() {
+        // Compute the the degenerate codon index in the range [0..3375] from
+        // the currently assigned set of bases.
+        var index = 0;
+        for ( var ii = 0; ii < 3; ++ii ) {
+            var ii_val = this.pos[ii][3]*8 + this.pos[ii][2]*4 + this.pos[ii][1]*2 + this.pos[ii][0] - 1; // range from 0 to 15
+            index = index*15 + ii_val;
+        }
+        return index;
+    }
+
     return dc;
+
 }
 
 
@@ -409,6 +428,7 @@ function AALibrary() {
         library.max_oligos_per_stretch = 0;
         library.max_oligos_total = 0;
         library.n_stretches = 0;
+        library.dclex = LexicographicalIterator( [ 15, 15, 15 ] );
     }
     init( library );
 
@@ -431,10 +451,8 @@ function AALibrary() {
             return;
         }
 
-        var dims = [ 15, 15, 15 ];
         this.aas_for_dc = [];
         this.diversities_for_dc = [];
-        this.dclex = LexicographicalIterator( dims );
         var dc = DegenerateCodon();
         this.dclex.reset();
         while ( ! this.dclex.at_end ) {
