@@ -243,17 +243,26 @@ function verify_solution_exists( library ) {
 
 }
 
-function output_tables_from_error_values( library, error_list, diversity_cap )  {
-    var output_html = []
-    for ( var i=0; i < error_list.length; ++i ) {
+function output_tables_from_error_values( library, error_list )  {
+    var codon_assignments = [];
+    for ( var ii = 0; ii < error_list.length; ++ii ) {
+        var error_trace = library.traceback_from_starting_point( error_list[ii][0], error_list[ii][1], error_list[ii][2] );
+        codon_assignments.push( codon_assignment_from_error_sequence( library, error_trace ));
+    }
+    return output_tables_from_codon_assignments( library, codon_assignments );
+}
+
+
+function output_tables_from_codon_assignments( library, codon_assignments ) {
+    var output_html = [];
+    for ( var i=0; i < codon_assignments.length; ++i ) {
         var table_i = [];
-        var error_trace = library.traceback_from_starting_point( error_list[i][0], error_list[i][1], error_list[i][2] );
-        var i_data = report_output_library_data( library, error_trace, diversity_cap );
+        var i_data = report_output_library_data_from_codon_assignment( library, codon_assignments[i] );
         var i_summary = ["<table class=result_table><tr class=rtheader><td>Result #</td><td>Error</td><td># Oligos Total</td>" +
                          "<td>Theoretical Diversity (DNA)</td><td>Amino-acid diversity</td><td>Percent Desired AAs</td></tr><tr><td>",
                          (i+1).toString(), "</td><td>",
-                         error_list[i][2].toString(), "</td><td>",
-                         error_list[i][0].toString(), "</td><td>",
+                         i_data.error.toString(), "</td><td>",
+                         i_data.n_primers_required.toString(), "</td><td>",
                          i_data.dna_diversity.toExponential(3), "</td><td>",
                          i_data.aa_diversity.toExponential(3), "</td><td>",
                          ( i_data.desired_aa_product * 100 ).toFixed(2), "%</td></tr></table><br>" ];
@@ -884,7 +893,7 @@ function validate_inputs_and_launch( launch_button ) {
             } else {
 
                 output_html = "Running time: " + (( stoptime - starttime ) / 1000 ) + " seconds<br>" +
-                    output_tables_from_error_values( library, error_list, libsize_upper_val );
+                    output_tables_from_error_values( library, error_list /*, libsize_upper_val*/ );
             }
             $('#resultdiv').html( output_html );
 

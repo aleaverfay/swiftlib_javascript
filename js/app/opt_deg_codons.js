@@ -1263,29 +1263,57 @@ function record_codon_data( position, codon_inds, library ) {
     return codon_data;
 }
 
-function report_output_library_data( library, error_sequence ) {
-    var dna_diversity_sum = 0;
-    var aa_diversity_sum = 0;
+function report_output_library_data_from_codon_assignment( library, codon_assignment )
+{
     var output_library_data = {};
     var desired_aa_product = 1;
+    var dna_diversity_sum = 0;
+    var aa_diversity_sum = 0;
+    var n_primer_count = 0;
+    var curr_stretch_n_primer_count = 1;
+    var error_sum = 0;
     output_library_data.positions = [];
     output_library_data.error = 0;
     for ( var ii=0; ii < library.n_positions; ++ii ) {
-        var ii_n_dcs = error_sequence[ ii ][ 0 ];
-        var ii_error = error_sequence[ ii ][ 1 ];
-        var ii_dc_list = library.codons_for_error_for_n_dcs[ ii ][ ii_n_dcs ][ ii_error ];
-        var codon_data =  record_codon_data( ii, ii_dc_list, library );
+        var codon_data =  record_codon_data( ii, codon_assignment[ii], library );
+        error_sum += codon_data.error;
         dna_diversity_sum += codon_data.log_dna_diversity;
         aa_diversity_sum +=  codon_data.log_aa_diversity;
         desired_aa_product *= codon_data.desired_aa_frac;
         output_library_data.positions.push( codon_data );
         output_library_data.error += output_library_data.positions[ ii ].error;
-        
+        if ( ii !== 0 && library.stretch_reps[ii] === ii ) {
+            // we've begun a new stretch
+            n_primer_count += curr_stretch_n_primer_count;
+            curr_stretch_n_primer_count = codon_assignment[ii].length;
+        } else {
+            curr_stretch_n_primer_count *= codon_assignment[ii].length;
+        }
     }
+    n_primer_count += curr_stretch_n_primer_count;
+
     output_library_data.dna_diversity = Math.exp( dna_diversity_sum );
     output_library_data.aa_diversity = Math.exp( aa_diversity_sum );
     output_library_data.desired_aa_product = desired_aa_product;
+    output_library_data.n_primers_required = n_primer_count;
+    output_library_data.error = error_sum;
     return output_library_data;
+}
+
+function codon_assignment_from_error_sequence( library, error_sequence )
+{
+    var codon_assignment = [];
+    for ( var ii=0; ii < library.n_positions; ++ii ) {
+        var ii_n_dcs = error_sequence[ ii ][ 0 ];
+        var ii_error = error_sequence[ ii ][ 1 ];
+        codon_assignment.push( library.codons_for_error_for_n_dcs[ ii ][ ii_n_dcs ][ ii_error ] );
+    }
+    return codon_assignment;
+}
+
+function report_output_library_data( library, error_sequence ) {
+    var codon_assignmetn = codon_assignment_from_error_sequence( library, error_sequence );
+    return report_output_library_data_from_codon_assignment( library, codon_assignment );
 }
 
 
