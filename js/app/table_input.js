@@ -945,7 +945,7 @@ function validate_inputs_and_launch( launch_button ) {
                 // library.find_errors_and_ndcs_beneath_diversity_cap gets called.
                 var pareto_optimal_error_logdiversity_pairs = pareto_optimal_solutions( library, libsize_upper_val );
                 for ( var ii = 0; ii < pareto_optimal_error_logdiversity_pairs.length; ++ii ) {
-                    console.log( "solution " + (ii+1).toString() + ": " + pareto_optimal_error_logdiversity_pairs[ii].join(", " )
+                    console.log( "solution " + (ii+1).toString() + ": " + pareto_optimal_error_logdiversity_pairs[ii].join(", " ) );
                 }
                 plot(pareto_optimal_error_logdiversity_pairs);
             }
