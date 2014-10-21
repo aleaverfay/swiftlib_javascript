@@ -812,6 +812,30 @@ function handle_tab_vs_csv_change( rad_button ) {
     $('#csvaacounts').val( new_csv );
 }
 
+function pareto_subset_2D( pairs ) {
+    var pareto_front = [];
+    pairs.sort( function( a, b ) { return a[0] === b[0] ? a[1] - b[1] : a[0]-b[0]; } );
+    pareto_front.push( pairs[0] );
+    for ( var ii = 0; ii < pairs.length; /* no increment */ ) {
+        var iicurr = ii;
+        for ( var jj = ii+1; jj < pairs.length; ++jj ) {
+            if ( pairs[jj][1] < pairs[ii][1] ) {
+                ii = jj;
+                pareto_front.push( pairs[jj] );
+                break;
+            }
+        }
+        if ( iicurr == ii ) {
+            break;
+        }
+    }
+    return pareto_front;
+}
+
+function pareto_optimal_solutions( library, diversity_cap ) {
+    var error_libsize_pairs = library.report_error_and_libsizes_beneath_diversity_cap( diversity_cap );
+    return pareto_subset_2D( error_libsize_pairs );
+}
 
 function validate_inputs_and_launch( launch_button ) {
 
@@ -925,6 +949,16 @@ function validate_inputs_and_launch( launch_button ) {
         $(launch_button).button("option","disabled", false);
         $(launch_button).button( "option", "label", "Generate Library" );
         $('#scrollhere').scrollIntoView();
+        
+        // TIM TIM TIM!  This is the code to extract the pareto optimal solutions from the library.
+        // This can be called anywhere after either library.find_minimal_error_beneath_diversity_cap or
+        // library.find_errors_and_ndcs_beneath_diversity_cap gets called.
+        var pareto_optimal_error_logdiversity_pairs = pareto_optimal_solutions( library, libsize_upper_val );
+        for ( var ii = 0; ii < pareto_optimal_error_logdiversity_pairs.length; ++ii ) {
+            console.log( "solution " + (ii+1).toString() + ": " + pareto_optimal_error_logdiversity_pairs[ii][0].toString() +
+                         ", " + pareto_optimal_error_logdiversity_pairs[ii][1].toString() );
+        }
+
     }, 1 );
 }
 

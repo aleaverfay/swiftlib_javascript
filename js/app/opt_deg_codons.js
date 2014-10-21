@@ -1134,6 +1134,26 @@ function AALibrary() {
         return [ best_noligos_total, best_noligos_for_stretch, best_error ];
     };
 
+    library.report_error_and_libsizes_beneath_diversity_cap = function( diversity_upper_bound ) {
+        var log_diversity_cap = Math.log( diversity_upper_bound );
+        var error_libsize_pairs = []
+        for ( var jj = 1; jj <= this.max_oligos_total; ++jj ) {
+            if ( ! this.dp_divmin[ this.n_positions-1 ].hasOwnProperty( jj ) ) continue;
+            var jj_dp_divmin = this.dp_divmin[ this.n_positions-1 ][ jj ];
+            for ( var kk = 1; kk <= this.max_oligos_per_stretch; ++kk ) {
+                if ( ! jj_dp_divmin.hasOwnProperty(kk) ) continue;
+                var kk_dp_divmin = jj_dp_divmin[ kk ];
+                for ( var ll = 0; ll <= this.error_span; ++ll ) {
+                    if ( ! kk_dp_divmin.hasOwnProperty(ll) ) continue;
+                    var lldiversity = kk_dp_divmin[ll];
+                    error_libsize_pairs.push( [ ll, lldiversity ] );
+                    if ( lldiversity < log_diversity_cap ) break; // take the smallest library beneath the cap and then stop
+                }
+            }
+        }
+        return error_libsize_pairs;
+    };
+
     library.find_errors_and_ndcs_beneath_diversity_cap = function( diversity_upper_bound, nsolutions ) {
         var errors_and_ndcs_in_range = [];
         var log_div_bound = Math.log( diversity_upper_bound );
