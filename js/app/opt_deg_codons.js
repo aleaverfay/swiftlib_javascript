@@ -1134,7 +1134,10 @@ function AALibrary() {
         return [ best_noligos_total, best_noligos_for_stretch, best_error ];
     };
 
-    library.report_error_and_libsizes_beneath_diversity_cap = function( diversity_upper_bound ) {
+    // Returns the list of errors and library sizes that are above the diversity cap and the other
+    // data that is needed in order to perform a dynamic programming backtrace to recover these
+    // other solutions.
+    library.report_error_and_libsizes_above_diversity_cap = function( diversity_upper_bound ) {
         var log_diversity_cap = Math.log( diversity_upper_bound );
         var error_libsize_pairs = []
         for ( var jj = 1; jj <= this.max_oligos_total; ++jj ) {
@@ -1146,7 +1149,7 @@ function AALibrary() {
                 for ( var ll = 0; ll <= this.error_span; ++ll ) {
                     if ( ! kk_dp_divmin.hasOwnProperty(ll) ) continue;
                     var lldiversity = kk_dp_divmin[ll];
-                    error_libsize_pairs.push( [ ll, lldiversity ] );
+                    error_libsize_pairs.push( [ ll, lldiversity, jj, kk ] );
                     if ( lldiversity < log_diversity_cap ) break; // take the smallest library beneath the cap and then stop
                 }
             }

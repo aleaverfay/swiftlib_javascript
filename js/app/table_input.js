@@ -833,7 +833,7 @@ function pareto_subset_2D( pairs ) {
 }
 
 function pareto_optimal_solutions( library, diversity_cap ) {
-    var error_libsize_pairs = library.report_error_and_libsizes_beneath_diversity_cap( diversity_cap );
+    var error_libsize_pairs = library.report_error_and_libsizes_above_diversity_cap( diversity_cap );
     return pareto_subset_2D( error_libsize_pairs );
 }
 
@@ -945,8 +945,7 @@ function validate_inputs_and_launch( launch_button ) {
                 // library.find_errors_and_ndcs_beneath_diversity_cap gets called.
                 var pareto_optimal_error_logdiversity_pairs = pareto_optimal_solutions( library, libsize_upper_val );
                 for ( var ii = 0; ii < pareto_optimal_error_logdiversity_pairs.length; ++ii ) {
-                    console.log( "solution " + (ii+1).toString() + ": " + pareto_optimal_error_logdiversity_pairs[ii][0].toString() +
-                     ", " + pareto_optimal_error_logdiversity_pairs[ii][1].toString() );
+                    console.log( "solution " + (ii+1).toString() + ": " + pareto_optimal_error_logdiversity_pairs[ii].join(", " )
                 }
                 plot(pareto_optimal_error_logdiversity_pairs);
             }
