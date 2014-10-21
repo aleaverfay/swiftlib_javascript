@@ -937,9 +937,18 @@ function validate_inputs_and_launch( launch_button ) {
                 }
                 output_html += ".</p>";
             } else {
-
                 output_html = "Running time: " + (( stoptime - starttime ) / 1000 ) + " seconds<br>" +
                     output_tables_from_error_values( library, error_list /*, libsize_upper_val*/ );
+
+                // TIM TIM TIM!  This is the code to extract the pareto optimal solutions from the library.
+                // This can be called anywhere after either library.find_minimal_error_beneath_diversity_cap or
+                // library.find_errors_and_ndcs_beneath_diversity_cap gets called.
+                var pareto_optimal_error_logdiversity_pairs = pareto_optimal_solutions( library, libsize_upper_val );
+                for ( var ii = 0; ii < pareto_optimal_error_logdiversity_pairs.length; ++ii ) {
+                    console.log( "solution " + (ii+1).toString() + ": " + pareto_optimal_error_logdiversity_pairs[ii][0].toString() +
+                     ", " + pareto_optimal_error_logdiversity_pairs[ii][1].toString() );
+                }
+                plot(pareto_optimal_error_logdiversity_pairs);
             }
             $('#resultdiv').html( output_html );
 
@@ -950,14 +959,6 @@ function validate_inputs_and_launch( launch_button ) {
         $(launch_button).button( "option", "label", "Generate Library" );
         $('#scrollhere').scrollIntoView();
         
-        // TIM TIM TIM!  This is the code to extract the pareto optimal solutions from the library.
-        // This can be called anywhere after either library.find_minimal_error_beneath_diversity_cap or
-        // library.find_errors_and_ndcs_beneath_diversity_cap gets called.
-        var pareto_optimal_error_logdiversity_pairs = pareto_optimal_solutions( library, libsize_upper_val );
-        for ( var ii = 0; ii < pareto_optimal_error_logdiversity_pairs.length; ++ii ) {
-            console.log( "solution " + (ii+1).toString() + ": " + pareto_optimal_error_logdiversity_pairs[ii][0].toString() +
-                         ", " + pareto_optimal_error_logdiversity_pairs[ii][1].toString() );
-        }
 
     }, 1 );
 }
