@@ -39,9 +39,9 @@ function plot(library, data) {
         .call(xAxis)
       .append("text")
         .attr("class", "label")
-        .attr("x", width)
+        .attr("x", 6)
         .attr("y", -6)
-        .style("text-anchor", "end")
+        .style("text-anchor", "start")
         .text("Diversity");
     
     //Add y-axis
@@ -51,9 +51,9 @@ function plot(library, data) {
       .append("text")
         .attr("class", "label")
         .attr("transform", "rotate(-90)")
-        .attr("x", 3)
-        .attr("y", 6)
-        .style("text-anchor", "end")
+        .attr("x", -height+20)
+        .attr("y", 10)
+        .style("text-anchor", "start")
         .text("Error");
 
     //Update the domains used for scaling
