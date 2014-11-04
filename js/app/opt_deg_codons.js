@@ -547,6 +547,11 @@ function AALibrary() {
             }
         }
 
+        this.n_desired_aas_per_pos = []
+        for ( var i=0; i < this.n_positions; ++i ) {
+            this.n_desired_aas_per_pos[ i ] = 0;
+        }
+
         // increase the maximum number of oligos per stretch to give space for
         // at least one position in a stretch to have as many degenerate codons
         // as has been allowed at that position, otherwise there is no point in
@@ -579,6 +584,7 @@ function AALibrary() {
                 if ( ijval === "*" ) {
                     //required!
                     this.required[j][i] = true;
+                    ++this.n_desired_aas_per_pos[j];
                 } else if ( ijval === "!" ) {
                     // forbidden
                     this.forbidden[j][i] = true;
@@ -586,11 +592,15 @@ function AALibrary() {
                     var ij_int = parseInt(ijval);
                     this.aa_counts[j][i] = ij_int;
                     obs_count[j] += Math.abs( ij_int );
+                    if ( ij_int > 0 ) {
+                        ++this.n_desired_aas_per_pos[j];
+                    }
                 }
             }
             //console.log( vals.join(", ") );
         }
         for ( var i=0; i < this.n_positions; ++i ) {
+            obs_count[i] += this.n_desired_aas_per_pos[i] * this.n_desired_aas_per_pos[i];
             if ( obs_count[i] > this.max_per_position_error ) {
                 this.max_per_position_error = obs_count[i];
             }
@@ -604,6 +614,7 @@ function AALibrary() {
     // amino acid is present
     library.error_given_aas_for_pos = function( pos, aas ) {
         var error = 0;
+        var count_desired = 0;
         for ( var i=0; i < 21; ++i ) {
             var icount = this.aa_counts[ pos ][ i ];
             if ( ! aas[ i ] ) {
@@ -614,6 +625,10 @@ function AALibrary() {
                     error += icount;
                 }
             } else {
+                if ( icount > 0 || this.required[ pos ][ i ] ) {
+                    ++count_desired;
+                }
+
                 if ( this.forbidden[ pos ][ i ] ) {
                     return this.infinity;
                 }
@@ -622,7 +637,9 @@ function AALibrary() {
                 }
             }
         }
-        return error;
+        var diversity_spread = ( this.n_desired_aas_per_pos[ pos ] - count_desired );
+        diversity_spread = diversity_spread * diversity_spread;
+        return error + diversity_spread;
     };
 
     // Returns the error for a given set of amino acids. Returns an error even
@@ -1300,11 +1317,12 @@ function record_codon_data( position, codon_inds, library ) {
             } else {
                 codon_data.present_string += "(" + orig_obs[i] + ")";
             }
-            if ( orig_obs[i] < 0 ) {
-                codon_data.error -= orig_obs[i];
-            }
+            //if ( orig_obs[i] < 0 ) {
+            //    codon_data.error -= orig_obs[i];
+            //}
         }
     }
+    codon_data.error = library.error_given_aas_for_pos( position, aas_present );
 
     codon_data.absent_string = "";
     for ( var i=0; i < aas_present.length; ++i ) {
