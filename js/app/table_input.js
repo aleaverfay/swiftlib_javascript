@@ -947,7 +947,7 @@ function validate_inputs_and_launch( launch_button ) {
                 for ( var ii = 0; ii < pareto_optimal_error_logdiversity_pairs.length; ++ii ) {
                     console.log( "solution " + (ii+1).toString() + ": " + pareto_optimal_error_logdiversity_pairs[ii].join(", " ) );
                 }
-                plot(pareto_optimal_error_logdiversity_pairs);
+                plot(library, pareto_optimal_error_logdiversity_pairs);
             }
             $('#resultdiv').html( output_html );
 

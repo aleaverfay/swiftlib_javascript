@@ -1,4 +1,7 @@
-function plot(data) {
+function plot(library, data) {
+
+    d3.select("#plotdiv").html("");
+    d3.select("#current_selected_output").html("");
 
     console.log(data);
 
@@ -36,9 +39,9 @@ function plot(data) {
         .call(xAxis)
       .append("text")
         .attr("class", "label")
-        .attr("x", width)
+        .attr("x", 6)
         .attr("y", -6)
-        .style("text-anchor", "end")
+        .style("text-anchor", "start")
         .text("Diversity");
     
     //Add y-axis
@@ -48,9 +51,9 @@ function plot(data) {
       .append("text")
         .attr("class", "label")
         .attr("transform", "rotate(-90)")
-        .attr("x", 3)
-        .attr("y", 6)
-        .style("text-anchor", "end")
+        .attr("x", -height+20)
+        .attr("y", 10)
+        .style("text-anchor", "start")
         .text("Error");
 
     //Update the domains used for scaling
@@ -90,5 +93,14 @@ function plot(data) {
         tooltip.transition()
             .duration(500)
             .style("opacity", 0);
+    })
+    .on("click", function(d) {
+        change_results_table(library, d[0], d[2], d[3]);
     });
+}
+
+function change_results_table(library, error_level, total_primers, primers_for_last_stretch) {
+    var error_list = [ [total_primers, primers_for_last_stretch, error_level] ]
+    var table = output_tables_from_error_values(library, error_list);
+    $('#current_selected_output').html(table);
 }
